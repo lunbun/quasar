@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "quasar",
+  "version": "${version}",
+  "name": "Quasar",
+  "description": "Minecraft Vulkan renderer",
+  "authors": [
+    "Lunbun"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/quasar/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "client": [
+      "io.github.lunbun.quasar.client.QuasarClient"
+    ]
+  },
+  "mixins": [
+    "quasar.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.11.3",
+    "minecraft": "1.16.5"
+  }
+}

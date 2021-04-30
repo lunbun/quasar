@@ -1,0 +1,17 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "io.github.lunbun.quasar.mixin",
+  "compatibilityLevel": "JAVA_8",
+  "mixins": [
+    "glfw.MixinWindow",
+    "gl.MixinWindow",
+    "vulkan.MixinRenderSystem",
+    "vulkan.MixinWindow"
+  ],
+  "client": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

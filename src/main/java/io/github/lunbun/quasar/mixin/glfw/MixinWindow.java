@@ -40,11 +40,8 @@ public class MixinWindow {
     private void customHints(WindowEventHandler eventHandler, MonitorTracker monitorTracker, WindowSettings settings,
                              String videoMode, String title, CallbackInfo ci) {
         // apply custom hints
-        for (Map.Entry<Integer, Integer> hint : GLFWWindow.glfwWindowHints.entrySet()) {
-            // make sure we don't apply a hint twice
-            if (!this.vanillaHints.contains(hint.getKey())) {
-                GLFW.glfwWindowHint(hint.getKey(), hint.getValue());
-            }
-        }
+        GLFWWindow.glfwWindowHints.entrySet().stream()
+                .filter(entry -> !this.vanillaHints.contains(entry.getKey()))
+                .forEach(hint -> GLFW.glfwWindowHint(hint.getKey(), hint.getValue()));
     }
 }

@@ -44,16 +44,9 @@ public final class ValidationLayerUtils {
             VK10.vkEnumerateInstanceLayerProperties(layerCount, availableLayers);
 
             for (String layerName : VALIDATION_LAYERS) {
-                boolean layerFound = false;
-
-                for (int i = 0; i < availableLayers.capacity(); ++i) {
-                    VkLayerProperties layerProperties = availableLayers.get(i);
-
-                    if (layerName.equals(layerProperties.layerNameString())) {
-                        layerFound = true;
-                        break;
-                    }
-                }
+                boolean layerFound = availableLayers.stream()
+                        .map(VkLayerProperties::layerNameString)
+                        .anyMatch(layerName::equals);
 
                 if (!layerFound) {
                     return false;

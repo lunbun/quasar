@@ -80,12 +80,23 @@ public final class PulsarApplication {
         if (!this.graphicsCardPreference.hasSwapChain) {
             throw new RuntimeException("Swap chain required!");
         }
+        this.swapChain.logicalDevice = this.logicalDevice;
+        this.swapChain.physicalDevice = this.physicalDevice;
+        this.swapChain.surface = this.windowSurface;
+        this.swapChain.preference = this.graphicsCardPreference;
+        this.swapChain.window = this.windowHandle;
+        this.swapChain.createSwapChain();
+        LOGGER.info("Created swap chain");
     }
 
     public void exit() {
+        this.swapChain.destroy();
+
         this.logicalDevice.destroy();
 
         ValidationLayerUtils.destroy(this.instance);
+
+        this.windowSurface.destroy(this.instance);
 
         this.instance.destroyInstance();
     }

@@ -32,6 +32,8 @@ dependencies {
     extraLibs "org.lwjgl:lwjgl-opengl:${lwjgl_version}"
     extraLibs "org.lwjgl:lwjgl-opengl:${lwjgl_version}:natives-windows"
 
+    extraLibs "org.apache.commons:commons-math3:${commons_math_version}"
+
     configurations.compile.extendsFrom(configurations.extraLibs)
 }
 

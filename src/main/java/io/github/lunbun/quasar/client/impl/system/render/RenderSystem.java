@@ -6,6 +6,7 @@ import io.github.lunbun.pulsar.struct.GraphicsCardPreference;
 import io.github.lunbun.pulsar.PulsarApplication;
 import io.github.lunbun.pulsar.struct.QueueFamily;
 import io.github.lunbun.quasar.client.engine.framework.glfw.GLFWWindow;
+import io.github.lunbun.quasar.client.engine.message.MessageBus;
 import io.github.lunbun.quasar.client.engine.message.MessageData;
 import io.github.lunbun.quasar.client.engine.message.System;
 import io.github.lunbun.quasar.client.impl.message.CreateWindowMessage;
@@ -38,6 +39,8 @@ public class RenderSystem extends System {
             );
             this.pulsar.requestGraphicsCard(preference);
             this.pulsar.initialize();
+
+            MessageBus.postMessage(MessageImpl.CLEANUP);
         } else if (data.type == MessageImpl.CLEANUP) {
             LOGGER.info("Cleaning up Vulkan");
             this.pulsar.exit();

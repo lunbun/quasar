@@ -1,12 +1,12 @@
 package io.github.lunbun.quasar.client.impl.system.render;
 
-import io.github.lunbun.pulsar.component.pipeline.GraphicsPipeline;
-import io.github.lunbun.pulsar.component.pipeline.Shader;
-import io.github.lunbun.pulsar.struct.DeviceExtension;
-import io.github.lunbun.pulsar.struct.DeviceType;
-import io.github.lunbun.pulsar.struct.GraphicsCardPreference;
+import io.github.lunbun.pulsar.struct.pipeline.GraphicsPipeline;
+import io.github.lunbun.pulsar.struct.pipeline.Shader;
+import io.github.lunbun.pulsar.struct.setup.DeviceExtension;
+import io.github.lunbun.pulsar.struct.setup.DeviceType;
+import io.github.lunbun.pulsar.struct.setup.GraphicsCardPreference;
 import io.github.lunbun.pulsar.PulsarApplication;
-import io.github.lunbun.pulsar.struct.QueueFamily;
+import io.github.lunbun.pulsar.struct.setup.QueueFamily;
 import io.github.lunbun.quasar.client.engine.framework.glfw.GLFWWindow;
 import io.github.lunbun.quasar.client.engine.message.MessageBus;
 import io.github.lunbun.quasar.client.engine.message.MessageData;
@@ -15,7 +15,6 @@ import io.github.lunbun.quasar.client.impl.message.CreateWindowMessage;
 import io.github.lunbun.quasar.client.impl.message.MessageImpl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.lwjgl.glfw.GLFW;
 
 public class RenderSystem extends System {
     private static final Logger LOGGER = LogManager.getLogger("Quasar");
@@ -44,7 +43,7 @@ public class RenderSystem extends System {
             this.pulsar.initialize();
 
             Shader shader = new Shader("shader/shader.vert", "shader/shader.frag");
-            GraphicsPipeline pipeline = this.pulsar.pipelines.createPipeline("pipeline1", shader);
+            GraphicsPipeline pipeline = this.pulsar.pipelines.createPipeline(shader);
 
             MessageBus.postMessage(MessageImpl.CLEANUP);
         } else if (data.type == MessageImpl.CLEANUP) {

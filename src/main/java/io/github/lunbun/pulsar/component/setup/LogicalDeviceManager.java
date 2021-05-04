@@ -1,7 +1,7 @@
 package io.github.lunbun.pulsar.component.setup;
 
 import io.github.lunbun.pulsar.component.presentation.WindowSurface;
-import io.github.lunbun.pulsar.struct.GraphicsCardPreference;
+import io.github.lunbun.pulsar.struct.setup.GraphicsCardPreference;
 import io.github.lunbun.pulsar.util.*;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;

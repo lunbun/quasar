@@ -1,7 +1,7 @@
 package io.github.lunbun.pulsar.util;
 
-import io.github.lunbun.pulsar.struct.GraphicsCardPreference;
-import io.github.lunbun.pulsar.struct.QueueFamily;
+import io.github.lunbun.pulsar.struct.setup.GraphicsCardPreference;
+import io.github.lunbun.pulsar.struct.setup.QueueFamily;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 

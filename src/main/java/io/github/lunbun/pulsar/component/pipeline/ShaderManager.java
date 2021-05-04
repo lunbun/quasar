@@ -1,6 +1,7 @@
 package io.github.lunbun.pulsar.component.pipeline;
 
 import io.github.lunbun.pulsar.component.setup.LogicalDeviceManager;
+import io.github.lunbun.pulsar.struct.pipeline.Shader;
 import io.github.lunbun.pulsar.util.shader.SPIRV;
 import io.github.lunbun.pulsar.util.shader.ShaderUtils;
 import org.lwjgl.system.MemoryStack;

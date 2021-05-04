@@ -2,26 +2,28 @@ package io.github.lunbun.pulsar.component.pipeline;
 
 import io.github.lunbun.pulsar.component.presentation.SwapChain;
 import io.github.lunbun.pulsar.component.setup.LogicalDeviceManager;
-import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
+import io.github.lunbun.pulsar.struct.pipeline.GraphicsPipeline;
+import io.github.lunbun.pulsar.struct.pipeline.Shader;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.Map;
+import java.util.List;
 
 public final class GraphicsPipelineManager {
-    private final Map<String, GraphicsPipeline> pipelinePool;
+    private final List<GraphicsPipeline> pipelinePool;
 
     public ShaderManager shaders;
     public SwapChain swapChain;
     public LogicalDeviceManager device;
 
     public GraphicsPipelineManager() {
-        this.pipelinePool = new Object2ObjectOpenHashMap<>();
+        this.pipelinePool = new ObjectArrayList<>();
     }
 
-    public GraphicsPipeline createPipeline(String name, Shader shader) {
+    public GraphicsPipeline createPipeline(Shader shader) {
         RenderPass renderPass = new RenderPass();
         renderPass.swapChain = this.swapChain;
         renderPass.device = this.device;
@@ -30,16 +32,12 @@ public final class GraphicsPipelineManager {
         GraphicsPipeline pipeline = new GraphicsPipeline(renderPass);
         this.createVkPipeline(pipeline, shader, renderPass);
 
-        this.pipelinePool.put(name, pipeline);
+        this.pipelinePool.add(pipeline);
         return pipeline;
     }
 
-    public GraphicsPipeline getPipeline(String name) {
-        return this.pipelinePool.get(name);
-    }
-
     public void destroy() {
-        for (GraphicsPipeline pipeline : pipelinePool.values()) {
+        for (GraphicsPipeline pipeline : pipelinePool) {
             this.destroyPipeline(pipeline);
         }
     }

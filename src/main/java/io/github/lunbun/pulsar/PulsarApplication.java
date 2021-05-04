@@ -1,7 +1,6 @@
 package io.github.lunbun.pulsar;
 
 import io.github.lunbun.pulsar.component.pipeline.GraphicsPipelineManager;
-import io.github.lunbun.pulsar.component.pipeline.RenderPass;
 import io.github.lunbun.pulsar.component.pipeline.ShaderManager;
 import io.github.lunbun.pulsar.component.presentation.ImageViewsManager;
 import io.github.lunbun.pulsar.component.presentation.SwapChain;
@@ -10,9 +9,9 @@ import io.github.lunbun.pulsar.component.setup.InstanceManager;
 import io.github.lunbun.pulsar.component.setup.LogicalDeviceManager;
 import io.github.lunbun.pulsar.component.setup.PhysicalDeviceManager;
 import io.github.lunbun.pulsar.component.setup.QueueManager;
-import io.github.lunbun.pulsar.struct.DeviceExtension;
-import io.github.lunbun.pulsar.struct.GraphicsCardPreference;
-import io.github.lunbun.pulsar.struct.QueueFamily;
+import io.github.lunbun.pulsar.struct.setup.DeviceExtension;
+import io.github.lunbun.pulsar.struct.setup.GraphicsCardPreference;
+import io.github.lunbun.pulsar.struct.setup.QueueFamily;
 import io.github.lunbun.pulsar.util.ValidationLayerUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

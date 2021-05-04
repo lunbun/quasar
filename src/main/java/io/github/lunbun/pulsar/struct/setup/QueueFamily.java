@@ -1,4 +1,4 @@
-package io.github.lunbun.pulsar.struct;
+package io.github.lunbun.pulsar.struct.setup;
 
 import org.lwjgl.vulkan.VK10;
 

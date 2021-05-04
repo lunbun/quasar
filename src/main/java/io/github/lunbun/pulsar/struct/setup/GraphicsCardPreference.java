@@ -1,6 +1,4 @@
-package io.github.lunbun.pulsar.struct;
-
-import org.lwjgl.vulkan.KHRSwapchain;
+package io.github.lunbun.pulsar.struct.setup;
 
 import java.util.Arrays;
 import java.util.List;

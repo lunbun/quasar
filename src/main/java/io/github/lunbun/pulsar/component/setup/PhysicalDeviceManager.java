@@ -2,8 +2,8 @@ package io.github.lunbun.pulsar.component.setup;
 
 import io.github.lunbun.pulsar.component.presentation.SwapChain;
 import io.github.lunbun.pulsar.component.presentation.WindowSurface;
-import io.github.lunbun.pulsar.struct.DeviceType;
-import io.github.lunbun.pulsar.struct.GraphicsCardPreference;
+import io.github.lunbun.pulsar.struct.setup.DeviceType;
+import io.github.lunbun.pulsar.struct.setup.GraphicsCardPreference;
 import io.github.lunbun.pulsar.util.DeviceUtils;
 import io.github.lunbun.pulsar.util.QueueFamilyIndices;
 import io.github.lunbun.pulsar.util.Vendors;

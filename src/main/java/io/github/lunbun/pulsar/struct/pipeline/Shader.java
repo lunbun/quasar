@@ -1,6 +1,5 @@
 package io.github.lunbun.pulsar.struct.pipeline;
 
-import io.github.lunbun.pulsar.component.pipeline.ShaderModule;
 import io.github.lunbun.pulsar.util.shader.ShaderType;
 import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import java.util.Map;

@@ -1,5 +1,7 @@
 package io.github.lunbun.quasar.client.impl.system.render;
 
+import io.github.lunbun.pulsar.component.pipeline.RenderPass;
+import io.github.lunbun.pulsar.component.pipeline.RenderPassManager;
 import io.github.lunbun.pulsar.struct.pipeline.GraphicsPipeline;
 import io.github.lunbun.pulsar.struct.pipeline.Shader;
 import io.github.lunbun.pulsar.struct.setup.DeviceExtension;
@@ -43,7 +45,8 @@ public class RenderSystem extends System {
             this.pulsar.initialize();
 
             Shader shader = new Shader("shader/shader.vert", "shader/shader.frag");
-            GraphicsPipeline pipeline = this.pulsar.pipelines.createPipeline(shader);
+            RenderPass renderPass = this.pulsar.renderPasses.createRenderPass();
+            GraphicsPipeline pipeline = this.pulsar.pipelines.createPipeline(shader, renderPass);
 
             MessageBus.postMessage(MessageImpl.CLEANUP);
         } else if (data.type == MessageImpl.CLEANUP) {

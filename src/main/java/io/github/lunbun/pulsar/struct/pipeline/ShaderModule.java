@@ -1,4 +1,4 @@
-package io.github.lunbun.pulsar.component.pipeline;
+package io.github.lunbun.pulsar.struct.pipeline;
 
 import io.github.lunbun.pulsar.util.shader.SPIRV;
 import io.github.lunbun.pulsar.util.shader.ShaderType;

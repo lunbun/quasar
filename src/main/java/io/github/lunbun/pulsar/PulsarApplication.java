@@ -1,6 +1,7 @@
 package io.github.lunbun.pulsar;
 
 import io.github.lunbun.pulsar.component.pipeline.GraphicsPipelineManager;
+import io.github.lunbun.pulsar.component.pipeline.RenderPassManager;
 import io.github.lunbun.pulsar.component.pipeline.ShaderManager;
 import io.github.lunbun.pulsar.component.presentation.ImageViewsManager;
 import io.github.lunbun.pulsar.component.presentation.SwapChain;
@@ -37,6 +38,7 @@ public final class PulsarApplication {
     private GraphicsCardPreference graphicsCardPreference;
     private long windowHandle;
 
+    public final RenderPassManager renderPasses;
     public final GraphicsPipelineManager pipelines;
     public final ShaderManager shaders;
 
@@ -50,7 +52,9 @@ public final class PulsarApplication {
         this.windowSurface = new WindowSurface();
         this.swapChain = new SwapChain();
         this.imageViews = new ImageViewsManager();
+
         this.shaders = new ShaderManager();
+        this.renderPasses = new RenderPassManager();
         this.pipelines = new GraphicsPipelineManager();
     }
 
@@ -108,12 +112,14 @@ public final class PulsarApplication {
         LOGGER.info("Created image views");
 
         this.shaders.device = this.logicalDevice;
-        LOGGER.info("Setup shaders manager");
 
         this.pipelines.shaders = this.shaders;
         this.pipelines.swapChain = this.swapChain;
         this.pipelines.device = this.logicalDevice;
-        LOGGER.info("Setup graphics pipeline manager");
+
+        this.renderPasses.device = this.logicalDevice;
+        this.renderPasses.swapChain = this.swapChain;
+        LOGGER.info("Setup pulsar-quasar interaction");
     }
 
     public void exit() {

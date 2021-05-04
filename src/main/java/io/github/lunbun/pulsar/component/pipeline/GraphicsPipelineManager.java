@@ -4,6 +4,7 @@ import io.github.lunbun.pulsar.component.presentation.SwapChain;
 import io.github.lunbun.pulsar.component.setup.LogicalDeviceManager;
 import io.github.lunbun.pulsar.struct.pipeline.GraphicsPipeline;
 import io.github.lunbun.pulsar.struct.pipeline.Shader;
+import io.github.lunbun.pulsar.struct.pipeline.ShaderModule;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -23,12 +24,7 @@ public final class GraphicsPipelineManager {
         this.pipelinePool = new ObjectArrayList<>();
     }
 
-    public GraphicsPipeline createPipeline(Shader shader) {
-        RenderPass renderPass = new RenderPass();
-        renderPass.swapChain = this.swapChain;
-        renderPass.device = this.device;
-        renderPass.createRenderPass();
-
+    public GraphicsPipeline createPipeline(Shader shader, RenderPass renderPass) {
         GraphicsPipeline pipeline = new GraphicsPipeline(renderPass);
         this.createVkPipeline(pipeline, shader, renderPass);
 

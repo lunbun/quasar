@@ -4,7 +4,7 @@ import io.github.lunbun.pulsar.util.shader.ShaderType;
 import it.unimi.dsi.fastutil.objects.Object2ObjectArrayMap;
 import java.util.Map;
 
-public class Shader {
+public final class Shader {
     public final Map<ShaderType, ShaderModule> modules;
 
     public Shader(String vertPath, String fragPath) {

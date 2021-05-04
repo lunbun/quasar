@@ -10,7 +10,7 @@ import org.lwjgl.vulkan.VkShaderModuleCreateInfo;
 
 import java.nio.LongBuffer;
 
-public class ShaderManager {
+public final class ShaderManager {
     private static long createShaderModule(SPIRV spirv, LogicalDeviceManager logicalDevice, MemoryStack stack) {
         VkShaderModuleCreateInfo createInfo = VkShaderModuleCreateInfo.callocStack(stack);
         createInfo.sType(VK10.VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO);

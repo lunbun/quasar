@@ -3,7 +3,7 @@ package io.github.lunbun.pulsar.component.pipeline;
 import io.github.lunbun.pulsar.util.shader.SPIRV;
 import io.github.lunbun.pulsar.util.shader.ShaderType;
 
-public class ShaderModule {
+public final class ShaderModule {
     protected SPIRV spirv;
     protected long module;
 

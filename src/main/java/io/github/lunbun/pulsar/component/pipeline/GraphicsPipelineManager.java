@@ -10,7 +10,7 @@ import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.Map;
 
-public class GraphicsPipelineManager {
+public final class GraphicsPipelineManager {
     private final Map<String, GraphicsPipeline> pipelinePool;
 
     public ShaderManager shaders;

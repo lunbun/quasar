@@ -7,7 +7,7 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
 
-public class RenderPass {
+public final class RenderPass {
     public SwapChain swapChain;
     public LogicalDeviceManager device;
     public long renderPass;

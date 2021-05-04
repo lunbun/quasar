@@ -9,7 +9,7 @@ import org.lwjgl.vulkan.VkImageViewCreateInfo;
 import java.nio.LongBuffer;
 import java.util.List;
 
-public class ImageViewsManager {
+public final class ImageViewsManager {
     public List<Long> imageViews;
     public LogicalDeviceManager logicalDevice;
     public SwapChain swapChain;

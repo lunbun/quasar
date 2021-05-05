@@ -1,19 +1,19 @@
 package io.github.lunbun.pulsar;
 
-import io.github.lunbun.pulsar.component.pipeline.GraphicsPipelineManager;
-import io.github.lunbun.pulsar.component.pipeline.RenderPassManager;
-import io.github.lunbun.pulsar.component.pipeline.ShaderManager;
+import io.github.lunbun.pulsar.component.pipeline.GraphicsPipeline;
+import io.github.lunbun.pulsar.component.pipeline.RenderPass;
+import io.github.lunbun.pulsar.component.pipeline.Shader;
 import io.github.lunbun.pulsar.component.presentation.ImageViewsManager;
 import io.github.lunbun.pulsar.component.presentation.SwapChain;
 import io.github.lunbun.pulsar.component.presentation.WindowSurface;
-import io.github.lunbun.pulsar.component.setup.InstanceManager;
-import io.github.lunbun.pulsar.component.setup.LogicalDeviceManager;
-import io.github.lunbun.pulsar.component.setup.PhysicalDeviceManager;
+import io.github.lunbun.pulsar.component.setup.Instance;
+import io.github.lunbun.pulsar.component.setup.LogicalDevice;
+import io.github.lunbun.pulsar.component.setup.PhysicalDevice;
 import io.github.lunbun.pulsar.component.setup.QueueManager;
 import io.github.lunbun.pulsar.struct.setup.DeviceExtension;
 import io.github.lunbun.pulsar.struct.setup.GraphicsCardPreference;
 import io.github.lunbun.pulsar.struct.setup.QueueFamily;
-import io.github.lunbun.pulsar.util.ValidationLayerUtils;
+import io.github.lunbun.pulsar.component.setup.ValidationLayerUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,35 +27,26 @@ public final class PulsarApplication {
 
     public final String name;
 
-    private final InstanceManager instance;
-    private final PhysicalDeviceManager physicalDevice;
-    private final LogicalDeviceManager logicalDevice;
+    private Instance instance;
+    private PhysicalDevice physicalDevice;
+    private LogicalDevice logicalDevice;
     private final QueueManager queues;
-    private final WindowSurface windowSurface;
-    private final SwapChain swapChain;
+    private WindowSurface surface;
+    private SwapChain swapChain;
     private final ImageViewsManager imageViews;
 
     private GraphicsCardPreference graphicsCardPreference;
     private long windowHandle;
 
-    public final RenderPassManager renderPasses;
-    public final GraphicsPipelineManager pipelines;
-    public final ShaderManager shaders;
+    public RenderPass.Builder renderPasses;
+    public GraphicsPipeline.Builder pipelines;
+    public Shader.Builder shaders;
 
     public PulsarApplication(String name) {
         this.name = name;
 
-        this.instance = new InstanceManager();
-        this.physicalDevice = new PhysicalDeviceManager();
-        this.logicalDevice = new LogicalDeviceManager();
         this.queues = new QueueManager();
-        this.windowSurface = new WindowSurface();
-        this.swapChain = new SwapChain();
         this.imageViews = new ImageViewsManager();
-
-        this.shaders = new ShaderManager();
-        this.renderPasses = new RenderPassManager();
-        this.pipelines = new GraphicsPipelineManager();
     }
 
     public void requestGraphicsCard(GraphicsCardPreference preference) {
@@ -67,24 +58,20 @@ public final class PulsarApplication {
     }
 
     public void initialize() {
-        this.instance.createInstance(this.name);
+        this.instance = Instance.Builder.createInstance(this.name);
         LOGGER.info("Created Vulkan instance");
 
         ValidationLayerUtils.setupDebugMessenger(this.instance);
         LOGGER.info("Setup debug messenger");
 
-        this.windowSurface.createSurface(this.instance, this.windowHandle);
+        this.surface = WindowSurface.Builder.createSurface(this.instance, this.windowHandle);
         LOGGER.info("Created window surface");
 
-        this.physicalDevice.preference = this.graphicsCardPreference;
-        this.physicalDevice.surface = this.windowSurface;
-        this.physicalDevice.pickPhysicalDevice(this.instance);
+        this.physicalDevice = PhysicalDevice.Selector.choosePhysicalDevice(this.instance, this.surface, this.graphicsCardPreference);
         LOGGER.info("Chose physical device");
         LOGGER.info("Using " + this.physicalDevice.vendor + " GPU " + this.physicalDevice.name);
 
-        this.logicalDevice.windowSurface = this.windowSurface;
-        this.logicalDevice.preference = this.graphicsCardPreference;
-        this.logicalDevice.createLogicalDevice(this.physicalDevice, this.queues);
+        this.logicalDevice = LogicalDevice.Builder.createLogicalDevice(this.physicalDevice, this.surface, this.graphicsCardPreference, this.queues);
         LOGGER.info("Created logical device");
         LOGGER.info("Using " + this.queues.getQueueFamilies().stream()
                 .map(QueueFamily::toString)
@@ -98,27 +85,16 @@ public final class PulsarApplication {
         if (!this.graphicsCardPreference.hasSwapChain) {
             throw new RuntimeException("Swap chain required!");
         }
-        this.swapChain.logicalDevice = this.logicalDevice;
-        this.swapChain.physicalDevice = this.physicalDevice;
-        this.swapChain.surface = this.windowSurface;
-        this.swapChain.preference = this.graphicsCardPreference;
-        this.swapChain.window = this.windowHandle;
-        this.swapChain.createSwapChain();
+        this.swapChain = SwapChain.Builder.createSwapChain(this.physicalDevice, this.logicalDevice, this.surface,
+                this.windowHandle, this.graphicsCardPreference);
         LOGGER.info("Created swap chain");
 
-        this.imageViews.logicalDevice = this.logicalDevice;
-        this.imageViews.swapChain = this.swapChain;
-        this.imageViews.createImageViews();
+        this.imageViews.createImageViews(this.logicalDevice, this.swapChain);
         LOGGER.info("Created image views");
 
-        this.shaders.device = this.logicalDevice;
-
-        this.pipelines.shaders = this.shaders;
-        this.pipelines.swapChain = this.swapChain;
-        this.pipelines.device = this.logicalDevice;
-
-        this.renderPasses.device = this.logicalDevice;
-        this.renderPasses.swapChain = this.swapChain;
+        this.shaders = new Shader.Builder(this.logicalDevice);
+        this.pipelines = new GraphicsPipeline.Builder(this.logicalDevice, this.shaders, this.swapChain);
+        this.renderPasses = new RenderPass.Builder(this.logicalDevice, this.swapChain);
         LOGGER.info("Setup pulsar-quasar interaction");
     }
 
@@ -133,8 +109,8 @@ public final class PulsarApplication {
 
         ValidationLayerUtils.destroy(this.instance);
 
-        this.windowSurface.destroy(this.instance);
+        this.surface.destroy();
 
-        this.instance.destroyInstance();
+        this.instance.destroy();
     }
 }

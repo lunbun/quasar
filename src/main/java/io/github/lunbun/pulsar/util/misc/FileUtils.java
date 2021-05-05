@@ -1,4 +1,4 @@
-package io.github.lunbun.pulsar.util;
+package io.github.lunbun.pulsar.util.misc;
 
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 

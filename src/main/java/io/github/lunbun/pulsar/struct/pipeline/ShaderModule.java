@@ -4,8 +4,8 @@ import io.github.lunbun.pulsar.util.shader.SPIRV;
 import io.github.lunbun.pulsar.util.shader.ShaderType;
 
 public final class ShaderModule {
-    protected SPIRV spirv;
-    protected long module;
+    public SPIRV spirv;
+    public long module;
 
     public final String path;
     public final ShaderType type;

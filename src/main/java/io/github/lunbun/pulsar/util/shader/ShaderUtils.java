@@ -1,6 +1,6 @@
 package io.github.lunbun.pulsar.util.shader;
 
-import io.github.lunbun.pulsar.util.FileUtils;
+import io.github.lunbun.pulsar.util.misc.FileUtils;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.util.shaderc.Shaderc;
 

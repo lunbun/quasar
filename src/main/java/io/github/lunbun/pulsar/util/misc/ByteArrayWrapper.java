@@ -1,4 +1,4 @@
-package io.github.lunbun.pulsar.util;
+package io.github.lunbun.pulsar.util.misc;
 
 public class ByteArrayWrapper {
     public final byte[] arr;

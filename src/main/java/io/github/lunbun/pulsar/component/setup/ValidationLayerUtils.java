@@ -1,7 +1,6 @@
-package io.github.lunbun.pulsar.util;
+package io.github.lunbun.pulsar.component.setup;
 
 import io.github.lunbun.quasar.Quasar;
-import io.github.lunbun.pulsar.component.setup.InstanceManager;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.lwjgl.system.Configuration;
@@ -97,7 +96,7 @@ public final class ValidationLayerUtils {
         }
     }
 
-    public static void setupDebugMessenger(InstanceManager instance) {
+    public static void setupDebugMessenger(Instance instance) {
         if (!ENABLE_VALIDATION_LAYERS) {
             return;
         }
@@ -118,7 +117,7 @@ public final class ValidationLayerUtils {
         }
     }
 
-    public static void destroy(InstanceManager instance) {
+    public static void destroy(Instance instance) {
         if (ENABLE_VALIDATION_LAYERS) {
             destroyDebugUtilsMessengerEXT(instance.instance, debugMessenger, null);
         }

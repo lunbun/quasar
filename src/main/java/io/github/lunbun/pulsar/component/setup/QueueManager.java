@@ -1,7 +1,7 @@
 package io.github.lunbun.pulsar.component.setup;
 
 import io.github.lunbun.pulsar.struct.setup.QueueFamily;
-import io.github.lunbun.pulsar.util.QueueFamilyIndices;
+import io.github.lunbun.pulsar.util.vulkan.QueueFamilyIndices;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;

@@ -1,4 +1,4 @@
-package io.github.lunbun.pulsar.util;
+package io.github.lunbun.pulsar.util.misc;
 
 public class MathUtils {
     public static final int UINT32_MAX = 0xffffffff;

@@ -1,4 +1,4 @@
-package io.github.lunbun.pulsar.util;
+package io.github.lunbun.pulsar.util.vulkan;
 
 import io.github.lunbun.pulsar.struct.setup.GraphicsCardPreference;
 import io.github.lunbun.pulsar.struct.setup.QueueFamily;

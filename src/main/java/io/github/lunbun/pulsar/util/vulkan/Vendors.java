@@ -1,4 +1,4 @@
-package io.github.lunbun.pulsar.util;
+package io.github.lunbun.pulsar.util.vulkan;
 
 import it.unimi.dsi.fastutil.ints.Int2ObjectArrayMap;
 

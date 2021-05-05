@@ -1,4 +1,4 @@
-package io.github.lunbun.pulsar.util;
+package io.github.lunbun.pulsar.util.misc;
 
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;

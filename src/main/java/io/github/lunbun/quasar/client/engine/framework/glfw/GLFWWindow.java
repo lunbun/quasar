@@ -15,4 +15,12 @@ public class GLFWWindow {
     public static void setResizable(boolean resizable) {
         glfwWindowHints.put(GLFW.GLFW_RESIZABLE, resizable ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE);
     }
+
+    public static boolean windowShouldClose(long window) {
+        return GLFW.glfwWindowShouldClose(window);
+    }
+
+    public static void pollEvents() {
+        GLFW.glfwPollEvents();
+    }
 }

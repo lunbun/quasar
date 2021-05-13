@@ -44,9 +44,8 @@ public final class QueueFamilyIndices {
         return (!preference.queues.contains(queue)) || (this.families.get(queue) != null);
     }
 
-    // TODO: calling values() on enum allocates memory, make a static value
     public boolean isComplete(GraphicsCardPreference preference) {
-        return Arrays.stream(QueueFamily.values())
+        return Arrays.stream(QueueFamily.VALUES)
                 .allMatch(family -> isFamilyComplete(preference, family));
     }
 

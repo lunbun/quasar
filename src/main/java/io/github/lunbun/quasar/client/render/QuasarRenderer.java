@@ -18,7 +18,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.lwjgl.glfw.GLFW;
 
 public class QuasarRenderer {
     private static final Logger LOGGER = LogManager.getLogger("Quasar");
@@ -102,8 +101,8 @@ public class QuasarRenderer {
         long ms = 0;
         long start = System.currentTimeMillis();
 
-        while (!GLFW.glfwWindowShouldClose(window)) {
-            GLFW.glfwPollEvents();
+        while (!GLFWWindow.windowShouldClose(window)) {
+            GLFWWindow.pollEvents();
             pulsar.frameRenderer.drawFrame(pulsar.commandPool.buffers);
 
             ++fps;

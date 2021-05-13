@@ -1,13 +1,11 @@
 package io.github.lunbun.pulsar.component.presentation;
 
-import io.github.lunbun.pulsar.PulsarApplication;
 import io.github.lunbun.pulsar.component.drawing.CommandPool;
 import io.github.lunbun.pulsar.component.drawing.Framebuffer;
 import io.github.lunbun.pulsar.component.pipeline.GraphicsPipeline;
 import io.github.lunbun.pulsar.component.pipeline.RenderPass;
 import io.github.lunbun.pulsar.component.setup.LogicalDevice;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import jdk.internal.net.http.common.Log;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryStack;
 

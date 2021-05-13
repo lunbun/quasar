@@ -31,8 +31,7 @@ public final class QueueManager {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             PointerBuffer pQueue = stack.pointers(VK10.VK_NULL_HANDLE);
 
-            // TODO: calling values() on enum allocates memory, make a static value
-            for (QueueFamily family : QueueFamily.values()) {
+            for (QueueFamily family : QueueFamily.VALUES) {
                 if (indices.hasFamily(family)) {
                     this.queues.put(family, indices.getQueueFamily(device, family, pQueue));
                 }

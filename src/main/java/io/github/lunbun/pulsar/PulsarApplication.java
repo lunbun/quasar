@@ -12,6 +12,7 @@ import io.github.lunbun.pulsar.component.setup.Instance;
 import io.github.lunbun.pulsar.component.setup.LogicalDevice;
 import io.github.lunbun.pulsar.component.setup.PhysicalDevice;
 import io.github.lunbun.pulsar.component.setup.QueueManager;
+import io.github.lunbun.pulsar.component.vertex.MemoryAllocator;
 import io.github.lunbun.pulsar.component.vertex.VertexBuffer;
 import io.github.lunbun.pulsar.struct.setup.DeviceExtension;
 import io.github.lunbun.pulsar.struct.setup.GraphicsCardPreference;
@@ -38,6 +39,7 @@ public final class PulsarApplication {
     private WindowSurface surface;
     private SwapChain swapChain;
     private SwapChainManager swapChainManager;
+    private MemoryAllocator memoryAllocator;
     private final ImageViewsManager imageViews;
 
     private GraphicsCardPreference graphicsCardPreference;
@@ -108,6 +110,7 @@ public final class PulsarApplication {
         this.imageViews.createImageViews(this.logicalDevice, this.swapChain);
         LOGGER.info("Created image views");
 
+        this.memoryAllocator = new MemoryAllocator(this.logicalDevice);
         this.shaders = new Shader.Builder(this.logicalDevice);
         this.pipelines = new GraphicsPipeline.Builder(this.logicalDevice, this.shaders, this.swapChain);
         this.renderPasses = new RenderPass.Builder(this.logicalDevice, this.swapChain);
@@ -117,7 +120,7 @@ public final class PulsarApplication {
         this.timings = new BlockingTimer.Builder(this.logicalDevice);
         this.frameRenderer = new FrameSynchronizer(this.logicalDevice, this.swapChain, this.swapChainManager, this.queues, this.timings);
         this.frameRenderer.init();
-        this.vertexBuffers = new VertexBuffer.Builder(this.logicalDevice, this.physicalDevice);
+        this.vertexBuffers = new VertexBuffer.Builder(this.logicalDevice, this.physicalDevice, this.memoryAllocator);
         LOGGER.info("Setup pulsar-quasar interaction");
 
         this.swapChainManager.assign(this.logicalDevice, this.swapChain, this.framebuffers, this.commandPool,
@@ -135,6 +138,7 @@ public final class PulsarApplication {
     public void exit() {
         this.swapChainManager.cleanup();
         this.vertexBuffers.destroy();
+        this.memoryAllocator.destroy();
         this.timings.destroy();
         this.commandPool.destroy();
         this.logicalDevice.destroy();

@@ -55,6 +55,8 @@ public final class CommandBuffer {
     }
 
     public void bindVertexBuffer(VertexBuffer vertexBuffer, CommandBatch batch) {
+        this.assertRenderPass();
+        // TODO: bind multiple buffers
         LongBuffer pBuffers = batch.stack.longs(vertexBuffer.buffer);
         LongBuffer pOffsets = batch.stack.longs(0);
         VK10.vkCmdBindVertexBuffers(this.buffer, 0, pBuffers, pOffsets);

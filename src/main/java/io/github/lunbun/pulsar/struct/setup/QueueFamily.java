@@ -13,4 +13,8 @@ public enum QueueFamily {
     QueueFamily(Integer bit) {
         this.bit = bit;
     }
+
+    // calling .values() allocates memory since arrays are mutable, but we won't be modifying it so we can use a static
+    // variable
+    public static final QueueFamily[] VALUES = QueueFamily.values();
 }

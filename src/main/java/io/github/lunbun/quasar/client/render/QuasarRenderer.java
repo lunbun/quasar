@@ -7,9 +7,8 @@ import io.github.lunbun.pulsar.component.drawing.Framebuffer;
 import io.github.lunbun.pulsar.component.pipeline.GraphicsPipeline;
 import io.github.lunbun.pulsar.component.pipeline.RenderPass;
 import io.github.lunbun.pulsar.component.pipeline.Shader;
-import io.github.lunbun.pulsar.component.vertex.IndexBuffer;
+import io.github.lunbun.pulsar.component.vertex.Buffer;
 import io.github.lunbun.pulsar.component.vertex.Vertex;
-import io.github.lunbun.pulsar.component.vertex.VertexBuffer;
 import io.github.lunbun.pulsar.struct.pipeline.Blend;
 import io.github.lunbun.pulsar.struct.setup.DeviceExtension;
 import io.github.lunbun.pulsar.struct.setup.DeviceType;
@@ -62,10 +61,10 @@ public class QuasarRenderer {
                 0, 1, 2, 2, 3, 0
         };
 
-        VertexBuffer vbo = pulsar.vertexBuffers.createVertexBuffer(4, 4L * vertexBuilder.sizeof());
-        pulsar.vertexBuffers.uploadData(vbo, vertices);
-        IndexBuffer ibo = pulsar.indexBuffers.createIndexBuffer(6);
-        pulsar.indexBuffers.uploadData(ibo, indices);
+        Buffer vbo = pulsar.buffers.createBuffer(Buffer.Type.VERTEX, 4, 4L * vertexBuilder.sizeof());
+        pulsar.buffers.uploadVertices(vbo, vertices);
+        Buffer ibo = pulsar.buffers.createBuffer(Buffer.Type.INDEX, 6, 6L * Short.BYTES);
+        pulsar.buffers.uploadIndices(ibo, indices);
         mesh = new Mesh(vbo, ibo);
     }
 

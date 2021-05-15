@@ -12,9 +12,8 @@ import io.github.lunbun.pulsar.component.setup.Instance;
 import io.github.lunbun.pulsar.component.setup.LogicalDevice;
 import io.github.lunbun.pulsar.component.setup.PhysicalDevice;
 import io.github.lunbun.pulsar.component.setup.QueueManager;
-import io.github.lunbun.pulsar.component.vertex.IndexBuffer;
+import io.github.lunbun.pulsar.component.vertex.Buffer;
 import io.github.lunbun.pulsar.component.vertex.MemoryAllocator;
-import io.github.lunbun.pulsar.component.vertex.VertexBuffer;
 import io.github.lunbun.pulsar.struct.setup.DeviceExtension;
 import io.github.lunbun.pulsar.struct.setup.GraphicsCardPreference;
 import io.github.lunbun.pulsar.struct.setup.QueueFamily;
@@ -54,8 +53,7 @@ public final class PulsarApplication {
     public CommandBatch.Builder commandBatches;
     public BlockingTimer.Builder timings;
     public FrameSynchronizer frameRenderer;
-    public VertexBuffer.Builder vertexBuffers;
-    public IndexBuffer.Builder indexBuffers;
+    public Buffer.Builder buffers;
 
     public PulsarApplication(String name) {
         this.name = name;
@@ -122,8 +120,7 @@ public final class PulsarApplication {
         this.timings = new BlockingTimer.Builder(this.logicalDevice);
         this.frameRenderer = new FrameSynchronizer(this.logicalDevice, this.swapChain, this.swapChainManager, this.queues, this.timings);
         this.frameRenderer.init();
-        this.vertexBuffers = new VertexBuffer.Builder(this.logicalDevice, this.physicalDevice, this.commandPool, this.commandBatches, this.queues, this.memoryAllocator);
-        this.indexBuffers = new IndexBuffer.Builder(this.logicalDevice, this.physicalDevice, this.commandPool, this.commandBatches, this.queues, this.memoryAllocator);
+        this.buffers = new Buffer.Builder(this.logicalDevice, this.physicalDevice, this.commandPool, this.commandBatches, this.queues, this.memoryAllocator);
         LOGGER.info("Setup pulsar-quasar interaction");
 
         this.swapChainManager.assign(this.logicalDevice, this.swapChain, this.framebuffers, this.commandPool,

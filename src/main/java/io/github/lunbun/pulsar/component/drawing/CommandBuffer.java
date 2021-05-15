@@ -75,12 +75,12 @@ public final class CommandBuffer {
 
     public void bindMesh(Mesh mesh, CommandBatch batch) {
         this.assertRecording();
-        LongBuffer pBuffers = batch.stack.longs(mesh.vertexBuffer.vertex.buffer);
+        LongBuffer pBuffers = batch.stack.longs(mesh.vertexBuffer.buffer);
         LongBuffer pOffsets = batch.stack.longs(0);
         VK10.vkCmdBindVertexBuffers(this.buffer, 0, pBuffers, pOffsets);
 
         if (mesh.indexBuffer != null) {
-            VK10.vkCmdBindIndexBuffer(this.buffer, mesh.indexBuffer.indices.buffer, 0, VK10.VK_INDEX_TYPE_UINT16);
+            VK10.vkCmdBindIndexBuffer(this.buffer, mesh.indexBuffer.buffer, 0, VK10.VK_INDEX_TYPE_UINT16);
         }
     }
 

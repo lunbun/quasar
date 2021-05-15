@@ -2,7 +2,7 @@ package io.github.lunbun.pulsar.component.drawing;
 
 import io.github.lunbun.pulsar.component.pipeline.GraphicsPipeline;
 import io.github.lunbun.pulsar.component.pipeline.RenderPass;
-import io.github.lunbun.pulsar.component.vertex.VertexBuffer;
+import io.github.lunbun.pulsar.struct.vertex.Mesh;
 import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
@@ -60,14 +60,6 @@ public final class CommandBuffer {
         this.inRenderPass = true;
     }
 
-    public void bindVertexBuffer(VertexBuffer vertexBuffer, CommandBatch batch) {
-        this.assertRenderPass();
-        // TODO: bind multiple buffers
-        LongBuffer pBuffers = batch.stack.longs(vertexBuffer.vertex.buffer);
-        LongBuffer pOffsets = batch.stack.longs(0);
-        VK10.vkCmdBindVertexBuffers(this.buffer, 0, pBuffers, pOffsets);
-    }
-
     public void copyBuffer(long src, long dst, int size, CommandBatch batch) {
         this.assertRecording();
         // TODO: batch copy buffers
@@ -81,9 +73,24 @@ public final class CommandBuffer {
         VK10.vkCmdBindPipeline(this.buffer, VK10.VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipeline);
     }
 
-    public void draw(int count, int instanceCount, int first, int firstInstance) {
-        this.assertRenderPass();
-        VK10.vkCmdDraw(this.buffer, count, instanceCount, first, firstInstance);
+    public void bindMesh(Mesh mesh, CommandBatch batch) {
+        this.assertRecording();
+        LongBuffer pBuffers = batch.stack.longs(mesh.vertexBuffer.vertex.buffer);
+        LongBuffer pOffsets = batch.stack.longs(0);
+        VK10.vkCmdBindVertexBuffers(this.buffer, 0, pBuffers, pOffsets);
+
+        if (mesh.indexBuffer != null) {
+            VK10.vkCmdBindIndexBuffer(this.buffer, mesh.indexBuffer.indices.buffer, 0, VK10.VK_INDEX_TYPE_UINT16);
+        }
+    }
+
+    public void drawMesh(Mesh mesh, int instanceCount, int first, int firstInstance) {
+        this.assertRecording();
+        if (mesh.indexBuffer == null) {
+            VK10.vkCmdDraw(this.buffer, mesh.vertexBuffer.count, instanceCount, first, firstInstance);
+        } else {
+            VK10.vkCmdDrawIndexed(this.buffer, mesh.indexBuffer.count, instanceCount, 0, first, firstInstance);
+        }
     }
 
     public void endRenderPass() {

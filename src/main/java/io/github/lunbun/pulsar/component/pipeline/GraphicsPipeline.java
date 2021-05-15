@@ -3,6 +3,7 @@ package io.github.lunbun.pulsar.component.pipeline;
 import io.github.lunbun.pulsar.component.presentation.SwapChain;
 import io.github.lunbun.pulsar.component.setup.LogicalDevice;
 import io.github.lunbun.pulsar.component.vertex.Vertex;
+import io.github.lunbun.pulsar.struct.pipeline.Blend;
 import io.github.lunbun.pulsar.struct.pipeline.ShaderModule;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.lwjgl.system.MemoryStack;
@@ -36,13 +37,14 @@ public final class GraphicsPipeline {
             this.pipelinePool = new ObjectArrayList<>();
         }
 
-        public GraphicsPipeline createPipeline(Shader shader, RenderPass renderPass) {
-            return this.createPipeline(shader, renderPass, null);
+        // TODO: multiple render passes
+        public GraphicsPipeline createPipeline(Shader shader, Blend blendFunc, RenderPass renderPass) {
+            return this.createPipeline(shader, blendFunc, renderPass, null);
         }
 
-        public GraphicsPipeline createPipeline(Shader shader, RenderPass renderPass, Vertex.Builder vertexBuilder) {
+        public GraphicsPipeline createPipeline(Shader shader, Blend blendFunc, RenderPass renderPass, Vertex.Builder vertexBuilder) {
             GraphicsPipeline pipeline = new GraphicsPipeline(renderPass);
-            this.createVkPipeline(pipeline, shader, renderPass, vertexBuilder);
+            this.createVkPipeline(pipeline, shader, blendFunc, renderPass, vertexBuilder);
 
             this.pipelinePool.add(pipeline);
             return pipeline;
@@ -60,7 +62,7 @@ public final class GraphicsPipeline {
             VK10.vkDestroyPipelineLayout(this.device.device, pipeline.pipelineLayout, null);
         }
 
-        private void createVkPipeline(GraphicsPipeline pipeline, Shader shader, RenderPass renderPass, Vertex.Builder vertexBuilder) {
+        private void createVkPipeline(GraphicsPipeline pipeline, Shader shader, Blend blend, RenderPass renderPass, Vertex.Builder vertexBuilder) {
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 VkPipelineShaderStageCreateInfo.Buffer shaderStageInfos = VkPipelineShaderStageCreateInfo.callocStack(2, stack);
 
@@ -117,13 +119,17 @@ public final class GraphicsPipeline {
                 VkPipelineColorBlendAttachmentState.Buffer colorBlendAttachment = VkPipelineColorBlendAttachmentState.callocStack(1, stack);
                 colorBlendAttachment.colorWriteMask(VK10.VK_COLOR_COMPONENT_R_BIT | VK10.VK_COLOR_COMPONENT_G_BIT |
                         VK10.VK_COLOR_COMPONENT_B_BIT | VK10.VK_COLOR_COMPONENT_A_BIT);
-                colorBlendAttachment.blendEnable(true);
-                colorBlendAttachment.srcColorBlendFactor(VK10.VK_BLEND_FACTOR_SRC_ALPHA);
-                colorBlendAttachment.dstColorBlendFactor(VK10.VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA);
-                colorBlendAttachment.colorBlendOp(VK10.VK_BLEND_OP_ADD);
-                colorBlendAttachment.srcAlphaBlendFactor(VK10.VK_BLEND_FACTOR_ONE);
-                colorBlendAttachment.dstAlphaBlendFactor(VK10.VK_BLEND_FACTOR_ZERO);
-                colorBlendAttachment.alphaBlendOp(VK10.VK_BLEND_OP_ADD);
+                if (blend == null) {
+                    colorBlendAttachment.blendEnable(false);
+                } else {
+                    colorBlendAttachment.blendEnable(true);
+                    colorBlendAttachment.srcColorBlendFactor(blend.srcColorBlendFactor.vk);
+                    colorBlendAttachment.dstColorBlendFactor(blend.dstColorBlendFactor.vk);
+                    colorBlendAttachment.colorBlendOp(blend.colorBlendOp.vk);
+                    colorBlendAttachment.srcAlphaBlendFactor(blend.srcAlphaBlendFactor.vk);
+                    colorBlendAttachment.dstAlphaBlendFactor(blend.dstAlphaBlendFactor.vk);
+                    colorBlendAttachment.alphaBlendOp(blend.alphaBlendOp.vk);
+                }
 
                 VkPipelineColorBlendStateCreateInfo colorBlending = VkPipelineColorBlendStateCreateInfo.callocStack(stack);
                 colorBlending.sType(VK10.VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO);

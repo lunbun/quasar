@@ -2,18 +2,23 @@ package io.github.lunbun.pulsar.component.drawing;
 
 import io.github.lunbun.pulsar.component.pipeline.GraphicsPipeline;
 import io.github.lunbun.pulsar.component.pipeline.RenderPass;
+import io.github.lunbun.pulsar.component.presentation.SwapChain;
+import io.github.lunbun.pulsar.component.uniform.DescriptorSet;
 import io.github.lunbun.pulsar.struct.vertex.Mesh;
+import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.nio.LongBuffer;
 
 public final class CommandBuffer {
     public final VkCommandBuffer buffer;
+    private final SwapChain swapChain;
 
     private boolean isRecording = false;
     private boolean inRenderPass = false;
 
-    protected CommandBuffer(VkCommandBuffer buffer) {
+    protected CommandBuffer(SwapChain swapChain, VkCommandBuffer buffer) {
+        this.swapChain = swapChain;
         this.buffer = buffer;
     }
 
@@ -31,41 +36,59 @@ public final class CommandBuffer {
         }
     }
 
-    public void startRecording(CommandBatch batch, int flags) {
-        batch.getBeginInfo().flags(flags);
-        if (VK10.vkBeginCommandBuffer(this.buffer, batch.getBeginInfo()) != VK10.VK_SUCCESS) {
-            throw new RuntimeException("Failed to begin recording command buffer!");
+    private void startRecording(int flags) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkCommandBufferBeginInfo beginInfo = VkCommandBufferBeginInfo.callocStack(stack);
+            beginInfo.sType(VK10.VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO);
+            beginInfo.flags(flags);
+            if (VK10.vkBeginCommandBuffer(this.buffer, beginInfo) != VK10.VK_SUCCESS) {
+                throw new RuntimeException("Failed to begin recording command buffer!");
+            }
+            this.isRecording = true;
         }
-        this.isRecording = true;
     }
 
-    public void startRecording(CommandBatch batch) {
-        this.startRecording(batch, 0);
+    public void startRecording() {
+        this.startRecording(0);
     }
 
-    public void startRenderPass(RenderPass renderPass, Framebuffer framebuffer, CommandBatch batch) {
+    public void startRecordingOneTimeSubmit() {
+        this.startRecording(VK10.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+    }
+
+    public void startRenderPass(RenderPass renderPass, Framebuffer framebuffer) {
         this.assertRecording();
-        VkRenderPassBeginInfo renderPassInfo = batch.getRenderPassInfo();
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkRenderPassBeginInfo renderPassInfo = VkRenderPassBeginInfo.callocStack(stack);
+            renderPassInfo.sType(VK10.VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO);
 
-        renderPassInfo.renderPass(renderPass.renderPass);
+            VkRect2D renderArea = VkRect2D.callocStack(stack);
+            renderArea.offset(VkOffset2D.callocStack(stack).set(0, 0));
+            renderArea.extent(this.swapChain.extent);
+            renderPassInfo.renderArea(renderArea);
 
-        VkClearValue.Buffer clearValues = VkClearValue.callocStack(1, batch.stack);
-        clearValues.color().float32(batch.stack.floats(0, 0, 0, 1));
-        renderPassInfo.pClearValues(clearValues);
+            renderPassInfo.renderPass(renderPass.renderPass);
 
-        renderPassInfo.framebuffer(framebuffer.framebuffer);
+            VkClearValue.Buffer clearValues = VkClearValue.callocStack(1, stack);
+            clearValues.color().float32(stack.floats(0, 0, 0, 1));
+            renderPassInfo.pClearValues(clearValues);
 
-        VK10.vkCmdBeginRenderPass(this.buffer, renderPassInfo, VK10.VK_SUBPASS_CONTENTS_INLINE);
+            renderPassInfo.framebuffer(framebuffer.framebuffer);
+
+            VK10.vkCmdBeginRenderPass(this.buffer, renderPassInfo, VK10.VK_SUBPASS_CONTENTS_INLINE);
+        }
 
         this.inRenderPass = true;
     }
 
-    public void copyBuffer(long src, long dst, int size, CommandBatch batch) {
+    public void copyBuffer(long src, long dst, int size) {
         this.assertRecording();
-        // TODO: batch copy buffers
-        VkBufferCopy.Buffer copyRegion = VkBufferCopy.callocStack(1, batch.stack);
-        copyRegion.size(size);
-        VK10.vkCmdCopyBuffer(this.buffer, src, dst, copyRegion);
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            // TODO: batch copy buffers
+            VkBufferCopy.Buffer copyRegion = VkBufferCopy.callocStack(1, stack);
+            copyRegion.size(size);
+            VK10.vkCmdCopyBuffer(this.buffer, src, dst, copyRegion);
+        }
     }
 
     public void bindPipeline(GraphicsPipeline graphicsPipeline) {
@@ -73,19 +96,29 @@ public final class CommandBuffer {
         VK10.vkCmdBindPipeline(this.buffer, VK10.VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipeline);
     }
 
-    public void bindMesh(Mesh mesh, CommandBatch batch) {
-        this.assertRecording();
-        LongBuffer pBuffers = batch.stack.longs(mesh.vertexBuffer.buffer);
-        LongBuffer pOffsets = batch.stack.longs(0);
-        VK10.vkCmdBindVertexBuffers(this.buffer, 0, pBuffers, pOffsets);
+    public void bindMesh(Mesh mesh) {
+        this.assertRenderPass();
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            LongBuffer pBuffers = stack.longs(mesh.vertexBuffer.buffer);
+            LongBuffer pOffsets = stack.longs(0);
+            VK10.vkCmdBindVertexBuffers(this.buffer, 0, pBuffers, pOffsets);
 
-        if (mesh.indexBuffer != null) {
-            VK10.vkCmdBindIndexBuffer(this.buffer, mesh.indexBuffer.buffer, 0, VK10.VK_INDEX_TYPE_UINT16);
+            if (mesh.indexBuffer != null) {
+                VK10.vkCmdBindIndexBuffer(this.buffer, mesh.indexBuffer.buffer, 0, VK10.VK_INDEX_TYPE_UINT16);
+            }
+        }
+    }
+
+    public void bindDescriptorSet(GraphicsPipeline pipeline, DescriptorSet descriptorSet) {
+        this.assertRenderPass();
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VK10.vkCmdBindDescriptorSets(this.buffer, VK10.VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.pipelineLayout,
+                    0, stack.longs(descriptorSet.descriptorSet), null);
         }
     }
 
     public void drawMesh(Mesh mesh, int instanceCount, int first, int firstInstance) {
-        this.assertRecording();
+        this.assertRenderPass();
         if (mesh.indexBuffer == null) {
             VK10.vkCmdDraw(this.buffer, mesh.vertexBuffer.count, instanceCount, first, firstInstance);
         } else {

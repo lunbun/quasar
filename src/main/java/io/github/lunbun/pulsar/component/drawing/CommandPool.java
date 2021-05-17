@@ -57,7 +57,7 @@ public final class CommandPool {
                 throw new RuntimeException("Failed to allocate command buffers!");
             }
 
-            return new CommandBuffer(new VkCommandBuffer(pCommandBuffers.get(0), this.device.device));
+            return new CommandBuffer(this.swapChain, new VkCommandBuffer(pCommandBuffers.get(0), this.device.device));
         }
     }
 
@@ -76,7 +76,7 @@ public final class CommandPool {
             }
 
             for (int i = 0; i < count; ++i) {
-                buffers.add(new CommandBuffer(new VkCommandBuffer(pCommandBuffers.get(i), this.device.device)));
+                buffers.add(new CommandBuffer(this.swapChain, new VkCommandBuffer(pCommandBuffers.get(i), this.device.device)));
             }
         }
     }

@@ -19,20 +19,16 @@ public final class Framebuffer {
         this.framebuffer = framebuffer;
     }
 
-    public void destroy(LogicalDevice device) {
+    protected void destroy(LogicalDevice device) {
         VK10.vkDestroyFramebuffer(device.device, this.framebuffer, null);
     }
 
     public static final class Builder {
-        public final List<Framebuffer> framebuffers;
-
         public final LogicalDevice device;
         public final SwapChain swapChain;
         public final ImageViewsManager imageViews;
 
         public Builder(LogicalDevice device, SwapChain swapChain, ImageViewsManager imageViews) {
-            this.framebuffers = new ObjectArrayList<>();
-
             this.device = device;
             this.swapChain = swapChain;
             this.imageViews = imageViews;
@@ -47,14 +43,18 @@ public final class Framebuffer {
             }
         }
 
-        public void destroy() {
-            for (int i = this.framebuffers.size() - 1; i >= 0; --i) {
-                this.framebuffers.get(i).destroy(this.device);
-                this.framebuffers.remove(i);
+        public void destroy(List<Framebuffer> framebuffers) {
+            for (int i = framebuffers.size() - 1; i >= 0; --i) {
+                framebuffers.get(i).destroy(this.device);
+                framebuffers.remove(i);
             }
         }
 
-        public void createFramebuffers(RenderPass renderPass) {
+        public int getFramebufferCount() {
+            return this.imageViews.imageViews.size();
+        }
+
+        public void createFramebuffers(RenderPass renderPass, List<Framebuffer> framebuffers) {
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 LongBuffer pAttachments = stack.mallocLong(1);
                 LongBuffer pFramebuffer = stack.mallocLong(1);
@@ -68,7 +68,7 @@ public final class Framebuffer {
 
                 for (long imageView : this.imageViews.imageViews) {
                     this.createFramebuffer(imageView, pAttachments, pFramebuffer, framebufferInfo);
-                    this.framebuffers.add(new Framebuffer(pFramebuffer.get(0)));
+                    framebuffers.add(new Framebuffer(pFramebuffer.get(0)));
                 }
             }
         }

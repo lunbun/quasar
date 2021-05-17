@@ -1,36 +1,19 @@
 package io.github.lunbun.quasar.client.render;
 
 import io.github.lunbun.pulsar.PulsarApplication;
-import io.github.lunbun.pulsar.component.drawing.CommandBatch;
-import io.github.lunbun.pulsar.component.drawing.CommandBuffer;
-import io.github.lunbun.pulsar.component.drawing.Framebuffer;
-import io.github.lunbun.pulsar.component.pipeline.GraphicsPipeline;
-import io.github.lunbun.pulsar.component.pipeline.RenderPass;
-import io.github.lunbun.pulsar.component.pipeline.Shader;
-import io.github.lunbun.pulsar.component.vertex.Buffer;
-import io.github.lunbun.pulsar.component.vertex.Vertex;
-import io.github.lunbun.pulsar.struct.pipeline.Blend;
 import io.github.lunbun.pulsar.struct.setup.DeviceExtension;
 import io.github.lunbun.pulsar.struct.setup.DeviceType;
 import io.github.lunbun.pulsar.struct.setup.GraphicsCardPreference;
 import io.github.lunbun.pulsar.struct.setup.QueueFamily;
-import io.github.lunbun.pulsar.struct.vertex.Mesh;
 import io.github.lunbun.quasar.client.engine.framework.glfw.GLFWWindow;
+import io.github.lunbun.quasar.client.render.stage.Immediate2D;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.joml.Vector2f;
-import org.joml.Vector3f;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class QuasarRenderer {
     private static final Logger LOGGER = LogManager.getLogger("Quasar");
-    private static final PulsarApplication pulsar = new PulsarApplication("Minecraft");
+    public static final PulsarApplication pulsar = new PulsarApplication("Minecraft");
     private static long window;
-    private static Vertex.Builder vertexBuilder;
-    private static Mesh mesh;
-    private static List<CommandBuffer> commandBuffers;
 
     public static void initWindow() {
         GLFWWindow.disableClientAPI();
@@ -46,55 +29,6 @@ public class QuasarRenderer {
         pulsar.framebufferResized();
     }
 
-    private static void createBuffer() {
-        vertexBuilder = new Vertex.Builder();
-        vertexBuilder.attribute(Vertex.Type.VEC2, 0);
-        vertexBuilder.attribute(Vertex.Type.VEC3, 1);
-
-        Vertex[] vertices = new Vertex[] {
-                vertexBuilder.createVertex(new Vector2f(-0.5f, -0.5f), new Vector3f(1, 0, 0)),
-                vertexBuilder.createVertex(new Vector2f(0.5f, -0.5f), new Vector3f(0, 1, 0)),
-                vertexBuilder.createVertex(new Vector2f(0.5f, 0.5f), new Vector3f(0, 0, 1)),
-                vertexBuilder.createVertex(new Vector2f(-0.5f, 0.5f), new Vector3f(1, 1, 1))
-        };
-        short[] indices = new short[] {
-                0, 1, 2, 2, 3, 0
-        };
-
-        Buffer vbo = pulsar.buffers.createBuffer(Buffer.Type.VERTEX, 4, 4L * vertexBuilder.sizeof());
-        pulsar.buffers.uploadVertices(vbo, vertices);
-        Buffer ibo = pulsar.buffers.createBuffer(Buffer.Type.INDEX, 6, 6L * Short.BYTES);
-        pulsar.buffers.uploadIndices(ibo, indices);
-        mesh = new Mesh(vbo, ibo);
-    }
-
-    private static void createRenderer() {
-        Shader shader = new Shader("shader/shader.vert", "shader/shader.frag");
-        Blend blendFunc = new Blend(
-            Blend.Factor.SRC_ALPHA, Blend.Operator.ADD, Blend.Factor.ONE_MINUS_SRC_ALPHA,
-            Blend.Factor.ONE, Blend.Operator.ADD, Blend.Factor.ZERO
-        );
-        RenderPass renderPass = pulsar.renderPasses.createRenderPass();
-        GraphicsPipeline pipeline = pulsar.pipelines.createPipeline(shader, blendFunc, renderPass, vertexBuilder);
-        pulsar.framebuffers.createFramebuffers(renderPass);
-
-        pulsar.commandPool.allocateBuffers(pulsar.framebuffers.framebuffers.size(), commandBuffers);
-        try (CommandBatch batch = pulsar.commandBatches.createBatch()) {
-            for (int i = 0; i < commandBuffers.size(); ++i) {
-                CommandBuffer buffer = commandBuffers.get(i);
-                Framebuffer framebuffer = pulsar.framebuffers.framebuffers.get(i);
-
-                buffer.startRecording(batch);
-                buffer.startRenderPass(renderPass, framebuffer, batch);
-                buffer.bindPipeline(pipeline);
-                buffer.bindMesh(mesh, batch);
-                buffer.drawMesh(mesh, 1, 0, 0);
-                buffer.endRenderPass();
-                buffer.endRecording();
-            }
-        }
-    }
-
     public static void initVulkan() {
         LOGGER.info("Initializing Vulkan");
         GraphicsCardPreference preference = new GraphicsCardPreference(
@@ -105,19 +39,21 @@ public class QuasarRenderer {
         pulsar.requestGraphicsCard(preference);
 
         pulsar.addRecreateHandler(ignored -> {
-            createRenderer();
+            Immediate2D.recreateFramebuffers();
         });
 
         pulsar.addCommandBufferDestructor(ignored -> {
-            pulsar.commandPool.freeBuffers(commandBuffers);
-            commandBuffers.clear();
+            Immediate2D.destroyFramebuffers();
+        });
+
+        pulsar.addCommandBufferRecorder((commandBuffer, index, currentFrame) -> {
+            Immediate2D.recordCommandBuffers(commandBuffer, index, currentFrame);
         });
 
         pulsar.initialize();
-        commandBuffers = new ArrayList<>();
 
-        createBuffer();
-        createRenderer();
+        Immediate2D.initPulsar();
+        Immediate2D.recreateFramebuffers();
 
         System.out.print("0 fps");
         int fps = 0;
@@ -126,7 +62,9 @@ public class QuasarRenderer {
 
         while (!GLFWWindow.windowShouldClose(window)) {
             GLFWWindow.pollEvents();
-            pulsar.frameRenderer.drawFrame(commandBuffers);
+            Immediate2D.clear();
+            Immediate2D.fill(-0.5f, -0.5f, 0.5f, 0.5f, 1, 1, 1, 1);
+            pulsar.frameRenderer.drawFrame();
 
             ++fps;
             long time = System.currentTimeMillis();
@@ -140,10 +78,12 @@ public class QuasarRenderer {
         }
         System.out.println("\rcomplete                        ");
         pulsar.endLoop();
+
+        cleanup();
     }
 
     public static void cleanup() {
-        mesh.destroy();
+        Immediate2D.destroy();
         pulsar.exit();
     }
 }

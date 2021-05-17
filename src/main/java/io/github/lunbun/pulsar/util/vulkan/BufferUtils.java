@@ -1,6 +1,5 @@
 package io.github.lunbun.pulsar.util.vulkan;
 
-import io.github.lunbun.pulsar.component.drawing.CommandBatch;
 import io.github.lunbun.pulsar.component.drawing.CommandBuffer;
 import io.github.lunbun.pulsar.component.drawing.CommandPool;
 import io.github.lunbun.pulsar.component.setup.LogicalDevice;
@@ -70,16 +69,17 @@ public final class BufferUtils {
         return new BufferData(buffer, memoryType, memory, pointer, size, (int) memoryRequirements.size());
     }
 
-    public static void copyBuffer(CommandPool commandPool, CommandBatch.Builder commandBatches, QueueManager queues, long src, long dst, int size) {
+    public static void copyBuffer(CommandPool commandPool, QueueManager queues, long src, long dst, int size) {
         CommandBuffer buffer = commandPool.allocateBuffer();
-        try (CommandBatch batch = commandBatches.createBatch()) {
-            buffer.startRecording(batch, VK10.VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-            buffer.copyBuffer(src, dst, size, batch);
+
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            buffer.startRecordingOneTimeSubmit();
+            buffer.copyBuffer(src, dst, size);
             buffer.endRecording();
 
-            VkSubmitInfo submitInfo = VkSubmitInfo.callocStack(batch.stack);
+            VkSubmitInfo submitInfo = VkSubmitInfo.callocStack(stack);
             submitInfo.sType(VK10.VK_STRUCTURE_TYPE_SUBMIT_INFO);
-            submitInfo.pCommandBuffers(batch.stack.pointers(buffer.buffer));
+            submitInfo.pCommandBuffers(stack.pointers(buffer.buffer));
 
             VK10.vkQueueSubmit(queues.getQueue(QueueFamily.GRAPHICS), submitInfo, VK10.VK_NULL_HANDLE);
             VK10.vkQueueWaitIdle(queues.getQueue(QueueFamily.GRAPHICS));
@@ -94,22 +94,32 @@ public final class BufferUtils {
     }
 
     public static void uploadData(LogicalDevice device, PhysicalDevice physicalDevice, MemoryAllocator allocator,
-                                  CommandPool commandPool, CommandBatch.Builder commandBatches, QueueManager queues,
-                                  BufferData buffer, Consumer<ByteBuffer> bufferWriter) {
-        // TODO: should we be creating a staging buffer every time we upload, or should we store it?
+                                  CommandPool commandPool, QueueManager queues, BufferData buffer,
+                                  Consumer<ByteBuffer> bufferWriter, boolean useStaging) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             PointerBuffer pData = stack.mallocPointer(1);
-            BufferData staging = BufferUtils.createBuffer(device, physicalDevice, allocator,
-                    buffer.size, VK10.VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                    VK10.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK10.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stack);
-            VK10.vkMapMemory(device.device, staging.memory, staging.pointer, staging.size, 0, pData);
-            {
-                bufferWriter.accept(pData.getByteBuffer(0, (int) staging.size));
+            if (useStaging) {
+                // TODO: should we be creating a staging buffer every time we upload, or should we store it?
+                BufferData staging = BufferUtils.createBuffer(device, physicalDevice, allocator,
+                        buffer.size, VK10.VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                        VK10.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK10.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stack);
+                VK10.vkMapMemory(device.device, staging.memory, staging.pointer, staging.size, 0, pData);
+                {
+                    bufferWriter.accept(pData.getByteBuffer(0, (int) staging.size));
+                }
+                VK10.vkUnmapMemory(device.device, staging.memory);
+                BufferUtils.copyBuffer(commandPool, queues, staging.buffer, buffer.buffer, (int) buffer.size);
+                destroy(device, allocator, staging);
+            } else {
+                // staging buffers can actually be slower if we have to upload data every frame
+                // considering that Minecraft uses immediate mode, that is most of the rendering
+                // TODO: flushing mapped memory ranges (see https://vulkan-tutorial.com/Vertex_buffers/Vertex_buffer_creation)
+                VK10.vkMapMemory(device.device, buffer.memory, buffer.pointer, buffer.size, 0, pData);
+                {
+                    bufferWriter.accept(pData.getByteBuffer(0, (int) buffer.size));
+                }
+                VK10.vkUnmapMemory(device.device, buffer.memory);
             }
-            VK10.vkUnmapMemory(device.device, staging.memory);
-            BufferUtils.copyBuffer(commandPool, commandBatches, queues, staging.buffer, buffer.buffer,
-                    (int) buffer.size);
-            destroy(device, allocator, staging);
         }
     }
 }

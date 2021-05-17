@@ -23,4 +23,8 @@ public class GLFWWindow {
     public static void pollEvents() {
         GLFW.glfwPollEvents();
     }
+
+    public static double getTime() {
+        return GLFW.glfwGetTime();
+    }
 }

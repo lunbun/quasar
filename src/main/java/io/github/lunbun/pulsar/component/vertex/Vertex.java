@@ -1,8 +1,7 @@
 package io.github.lunbun.pulsar.component.vertex;
 
+import io.github.lunbun.pulsar.util.vulkan.DataType;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
-import org.joml.Vector2f;
-import org.joml.Vector3f;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkVertexInputAttributeDescription;
@@ -10,7 +9,6 @@ import org.lwjgl.vulkan.VkVertexInputBindingDescription;
 
 import java.nio.ByteBuffer;
 import java.util.List;
-import java.util.function.BiConsumer;
 
 public final class Vertex {
     private final Object[] values;
@@ -34,37 +32,12 @@ public final class Vertex {
         }
     }
 
-    public enum Type {
-        // TODO: do not rely on JOML
-        VEC2(VK10.VK_FORMAT_R32G32_SFLOAT, 2 * Float.BYTES, (buffer, object) -> {
-            Vector2f vec = (Vector2f) object;
-            buffer.putFloat(vec.x());
-            buffer.putFloat(vec.y());
-        }),
-        VEC3(VK10.VK_FORMAT_R32G32B32_SFLOAT, 3 * Float.BYTES, (buffer, object) -> {
-            Vector3f vec = (Vector3f) object;
-            buffer.putFloat(vec.x());
-            buffer.putFloat(vec.y());
-            buffer.putFloat(vec.z());
-        });
-
-        public final int format;
-        public final int size;
-        public final BiConsumer<ByteBuffer, Object> writer;
-
-        Type(int format, int size, BiConsumer<ByteBuffer, Object> writer) {
-            this.format = format;
-            this.size = size;
-            this.writer = writer;
-        }
-    }
-
     public static final class VertexData {
-        public final Type type;
+        public final DataType type;
         public final int offset;
         public final int location;
 
-        public VertexData(Type type, int offset, int location) {
+        public VertexData(DataType type, int offset, int location) {
             this.type = type;
             this.offset = offset;
             this.location = location;
@@ -86,7 +59,7 @@ public final class Vertex {
             return this.offset;
         }
 
-        public void attribute(Type vertexType, int location) {
+        public void attribute(DataType vertexType, int location) {
             if (this.immutable) {
                 throw new RuntimeException("Vertex builder is immutable! Once a vertex has been created, attributes cannot be added.");
             }

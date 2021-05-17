@@ -2,6 +2,7 @@ package io.github.lunbun.pulsar.component.pipeline;
 
 import io.github.lunbun.pulsar.component.presentation.SwapChain;
 import io.github.lunbun.pulsar.component.setup.LogicalDevice;
+import io.github.lunbun.pulsar.component.uniform.DescriptorSetLayout;
 import io.github.lunbun.pulsar.component.vertex.Vertex;
 import io.github.lunbun.pulsar.struct.pipeline.Blend;
 import io.github.lunbun.pulsar.struct.pipeline.ShaderModule;
@@ -38,13 +39,9 @@ public final class GraphicsPipeline {
         }
 
         // TODO: multiple render passes
-        public GraphicsPipeline createPipeline(Shader shader, Blend blendFunc, RenderPass renderPass) {
-            return this.createPipeline(shader, blendFunc, renderPass, null);
-        }
-
-        public GraphicsPipeline createPipeline(Shader shader, Blend blendFunc, RenderPass renderPass, Vertex.Builder vertexBuilder) {
+        public GraphicsPipeline createPipeline(Shader shader, Blend blendFunc, RenderPass renderPass, DescriptorSetLayout descriptorSetLayout, Vertex.Builder vertexBuilder) {
             GraphicsPipeline pipeline = new GraphicsPipeline(renderPass);
-            this.createVkPipeline(pipeline, shader, blendFunc, renderPass, vertexBuilder);
+            this.createVkPipeline(pipeline, shader, blendFunc, renderPass, descriptorSetLayout, vertexBuilder);
 
             this.pipelinePool.add(pipeline);
             return pipeline;
@@ -62,7 +59,7 @@ public final class GraphicsPipeline {
             VK10.vkDestroyPipelineLayout(this.device.device, pipeline.pipelineLayout, null);
         }
 
-        private void createVkPipeline(GraphicsPipeline pipeline, Shader shader, Blend blend, RenderPass renderPass, Vertex.Builder vertexBuilder) {
+        private void createVkPipeline(GraphicsPipeline pipeline, Shader shader, Blend blend, RenderPass renderPass, DescriptorSetLayout descriptorSetLayout, Vertex.Builder vertexBuilder) {
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 VkPipelineShaderStageCreateInfo.Buffer shaderStageInfos = VkPipelineShaderStageCreateInfo.callocStack(2, stack);
 
@@ -107,7 +104,7 @@ public final class GraphicsPipeline {
                 rasterizer.rasterizerDiscardEnable(false);
                 rasterizer.polygonMode(VK10.VK_POLYGON_MODE_FILL);
                 rasterizer.lineWidth(1);
-                rasterizer.cullMode(VK10.VK_CULL_MODE_BACK_BIT);
+                rasterizer.cullMode(VK10.VK_CULL_MODE_NONE);
                 rasterizer.frontFace(VK10.VK_FRONT_FACE_CLOCKWISE);
                 rasterizer.depthBiasEnable(false);
 
@@ -151,6 +148,9 @@ public final class GraphicsPipeline {
 
                 VkPipelineLayoutCreateInfo pipelineLayoutInfo = VkPipelineLayoutCreateInfo.callocStack(stack);
                 pipelineLayoutInfo.sType(VK10.VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
+                if (descriptorSetLayout != null) {
+                    pipelineLayoutInfo.pSetLayouts(stack.longs(descriptorSetLayout.layout));
+                }
 
                 if (VK10.vkCreatePipelineLayout(this.device.device, pipelineLayoutInfo, null, pPipelineLayout) != VK10.VK_SUCCESS) {
                     throw new RuntimeException("Failed to create pipeline layout!");

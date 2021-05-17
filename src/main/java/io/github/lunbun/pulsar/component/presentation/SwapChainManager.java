@@ -45,7 +45,6 @@ public final class SwapChainManager {
     }
 
     public void cleanup() {
-        this.framebuffers.destroy();
         this.executeCommandBufferDestructors();
         this.pipelines.destroy();
         this.renderPasses.destroy();

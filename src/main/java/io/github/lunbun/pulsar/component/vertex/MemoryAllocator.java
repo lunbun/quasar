@@ -104,8 +104,9 @@ public final class MemoryAllocator {
 
         public void free(int pointer, int size) {
             int cellMemorySize = MathUtils.ceilIntDivide(size, this.cellSize);
+            int cellPointer = pointer / this.cellSize;
             for (int i = 0; i < cellMemorySize; ++i) {
-                this.unclaim(i + pointer);
+                this.unclaim(i + cellPointer);
             }
         }
 

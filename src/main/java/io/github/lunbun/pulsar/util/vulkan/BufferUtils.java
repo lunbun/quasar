@@ -99,7 +99,6 @@ public final class BufferUtils {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             PointerBuffer pData = stack.mallocPointer(1);
             if (useStaging) {
-                // TODO: should we be creating a staging buffer every time we upload, or should we store it?
                 BufferData staging = BufferUtils.createBuffer(device, physicalDevice, allocator,
                         buffer.size, VK10.VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                         VK10.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK10.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stack);

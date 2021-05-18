@@ -5,13 +5,13 @@ import io.github.lunbun.pulsar.struct.setup.DeviceExtension;
 import io.github.lunbun.pulsar.struct.setup.DeviceType;
 import io.github.lunbun.pulsar.struct.setup.GraphicsCardPreference;
 import io.github.lunbun.pulsar.struct.setup.QueueFamily;
+import io.github.lunbun.quasar.Quasar;
 import io.github.lunbun.quasar.client.engine.framework.glfw.GLFWWindow;
-import io.github.lunbun.quasar.client.render.stage.Immediate2D;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import io.github.lunbun.quasar.client.render.stage.Immediates;
+import net.minecraft.client.gui.DrawableHelper;
+import net.minecraft.client.util.math.MatrixStack;
 
 public class QuasarRenderer {
-    private static final Logger LOGGER = LogManager.getLogger("Quasar");
     public static final PulsarApplication pulsar = new PulsarApplication("Minecraft");
     private static long window;
 
@@ -30,7 +30,7 @@ public class QuasarRenderer {
     }
 
     public static void initVulkan() {
-        LOGGER.info("Initializing Vulkan");
+        Quasar.LOGGER.info("Initializing Vulkan");
         GraphicsCardPreference preference = new GraphicsCardPreference(
                 DeviceType.INTEGRATED,
                 new QueueFamily[] { QueueFamily.GRAPHICS, QueueFamily.PRESENT },
@@ -39,21 +39,20 @@ public class QuasarRenderer {
         pulsar.requestGraphicsCard(preference);
 
         pulsar.addRecreateHandler(ignored -> {
-            Immediate2D.recreateFramebuffers();
+            Immediates.recreateFramebuffers();
         });
 
         pulsar.addCommandBufferDestructor(ignored -> {
-            Immediate2D.destroyFramebuffers();
+            Immediates.destroyFramebuffers();
         });
 
         pulsar.addCommandBufferRecorder((commandBuffer, index, currentFrame) -> {
-            Immediate2D.recordCommandBuffers(commandBuffer, index, currentFrame);
+            Immediates.recordCommandBuffers(commandBuffer, index, currentFrame);
         });
 
         pulsar.initialize();
 
-        Immediate2D.initPulsar();
-        Immediate2D.recreateFramebuffers();
+        Immediates.recreateFramebuffers();
 
         System.out.print("0 fps");
         int fps = 0;
@@ -62,8 +61,7 @@ public class QuasarRenderer {
 
         while (!GLFWWindow.windowShouldClose(window)) {
             GLFWWindow.pollEvents();
-            Immediate2D.clear();
-            Immediate2D.fill(-0.5f, -0.5f, 0.5f, 0.5f, 1, 1, 1, 1);
+            DrawableHelper.fill(new MatrixStack(), 0, 0, 1, 1, 0xffffffff);
             pulsar.frameRenderer.drawFrame();
 
             ++fps;
@@ -83,7 +81,7 @@ public class QuasarRenderer {
     }
 
     public static void cleanup() {
-        Immediate2D.destroy();
+        Immediates.destroy();
         pulsar.exit();
     }
 }

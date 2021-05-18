@@ -1,6 +1,9 @@
 package io.github.lunbun.pulsar;
 
-import io.github.lunbun.pulsar.component.drawing.*;
+import io.github.lunbun.pulsar.component.drawing.BlockingTimer;
+import io.github.lunbun.pulsar.component.drawing.CommandPool;
+import io.github.lunbun.pulsar.component.drawing.FrameSynchronizer;
+import io.github.lunbun.pulsar.component.drawing.Framebuffer;
 import io.github.lunbun.pulsar.component.pipeline.GraphicsPipeline;
 import io.github.lunbun.pulsar.component.pipeline.RenderPass;
 import io.github.lunbun.pulsar.component.pipeline.Shader;
@@ -8,10 +11,7 @@ import io.github.lunbun.pulsar.component.presentation.ImageViewsManager;
 import io.github.lunbun.pulsar.component.presentation.SwapChain;
 import io.github.lunbun.pulsar.component.presentation.SwapChainManager;
 import io.github.lunbun.pulsar.component.presentation.WindowSurface;
-import io.github.lunbun.pulsar.component.setup.Instance;
-import io.github.lunbun.pulsar.component.setup.LogicalDevice;
-import io.github.lunbun.pulsar.component.setup.PhysicalDevice;
-import io.github.lunbun.pulsar.component.setup.QueueManager;
+import io.github.lunbun.pulsar.component.setup.*;
 import io.github.lunbun.pulsar.component.uniform.DescriptorPool;
 import io.github.lunbun.pulsar.component.uniform.DescriptorSetLayout;
 import io.github.lunbun.pulsar.component.vertex.Buffer;
@@ -19,7 +19,6 @@ import io.github.lunbun.pulsar.component.vertex.MemoryAllocator;
 import io.github.lunbun.pulsar.struct.setup.DeviceExtension;
 import io.github.lunbun.pulsar.struct.setup.GraphicsCardPreference;
 import io.github.lunbun.pulsar.struct.setup.QueueFamily;
-import io.github.lunbun.pulsar.component.setup.ValidationLayerUtils;
 import io.github.lunbun.pulsar.util.misc.CommandBufferRecorder;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.apache.logging.log4j.LogManager;
@@ -33,7 +32,7 @@ import java.util.stream.Collectors;
  * A class that provides easy interaction with Vulkan.
  */
 public final class PulsarApplication {
-    private static final Logger LOGGER = LogManager.getLogger("Pulsar");
+    public static final Logger LOGGER = LogManager.getLogger("Pulsar");
     public static final int MAX_FRAMES_IN_FLIGHT = FrameSynchronizer.MAX_FRAMES_IN_FLIGHT;
 
     public final String name;

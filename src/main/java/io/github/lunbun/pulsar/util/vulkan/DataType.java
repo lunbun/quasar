@@ -11,11 +11,14 @@ import java.util.function.BiConsumer;
 
 public enum DataType {
     // TODO: do not rely on JOML
+    UINT(VK10.VK_FORMAT_R32_UINT, Integer.BYTES, Integer.BYTES, (buffer, object) -> {
+        buffer.putInt((int) object);
+    }),
     VEC2(VK10.VK_FORMAT_R32G32_SFLOAT, 2 * Float.BYTES, 2 * Float.BYTES, (buffer, object) -> {
         ((Vector2f) object).get(buffer);
         buffer.position(buffer.position() + 2 * Float.BYTES);
     }),
-    VEC3(VK10.VK_FORMAT_R32G32B32_SFLOAT, 3 * Float.BYTES, 3 * Float.BYTES, (buffer, object) -> {
+    VEC3(VK10.VK_FORMAT_R32G32B32_SFLOAT, 3 * Float.BYTES, 4 * Float.BYTES, (buffer, object) -> {
         ((Vector3f) object).get(buffer);
         buffer.position(buffer.position() + 3 * Float.BYTES);
     }),

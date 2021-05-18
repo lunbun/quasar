@@ -5,8 +5,12 @@
   "compatibilityLevel": "JAVA_8",
   "mixins": [
     "gl.MixinFramebuffer",
+    "gl.MixinRenderSystem",
     "gl.MixinWindow",
     "glfw.MixinWindow",
+    "vulkan.MixinBufferRenderer",
+    "vulkan.MixinBufferVertexConsumer",
+    "vulkan.MixinDrawableHelper",
     "vulkan.MixinMinecraftClient",
     "vulkan.MixinRenderSystem",
     "vulkan.MixinWindow"

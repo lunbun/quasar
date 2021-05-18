@@ -1,8 +1,6 @@
 package io.github.lunbun.pulsar.component.setup;
 
-import io.github.lunbun.quasar.Quasar;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import io.github.lunbun.pulsar.PulsarApplication;
 import org.lwjgl.system.Configuration;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -15,7 +13,6 @@ import java.util.Set;
 
 // https://github.com/Naitsirc98/Vulkan-Tutorial-Java/blob/ff0567a6635322d0413196f2ceffe338eef52bdb/src/main/java/javavulkantutorial/Ch02ValidationLayers.java
 public final class ValidationLayerUtils {
-    private static final Logger LOGGER = LogManager.getLogger(Quasar.MOD_NAME);
 
     public static final boolean ENABLE_VALIDATION_LAYERS = Configuration.DEBUG.get(true);
     private static long debugMessenger;
@@ -73,9 +70,9 @@ public final class ValidationLayerUtils {
         String msgType = Integer.toBinaryString(messageType);
 
         if (messageSeverity >= EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
-            LOGGER.error(msgType + " " + callbackData.pMessageString());
+            PulsarApplication.LOGGER.error(msgType + " " + callbackData.pMessageString());
         } else if (messageSeverity >= EXTDebugUtils.VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
-            LOGGER.warn(msgType + " " + callbackData.pMessageString());
+            PulsarApplication.LOGGER.warn(msgType + " " + callbackData.pMessageString());
         }
 
         return VK10.VK_FALSE;

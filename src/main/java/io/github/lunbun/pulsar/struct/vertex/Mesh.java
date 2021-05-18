@@ -9,8 +9,7 @@ public final class Mesh {
     public final Buffer indexBuffer;
 
     public Mesh(Buffer vertexBuffer) {
-        this.vertexBuffer = vertexBuffer;
-        this.indexBuffer = null;
+        this(vertexBuffer, null);
     }
 
     public Mesh(Buffer vertexBuffer, Buffer indexBuffer) {

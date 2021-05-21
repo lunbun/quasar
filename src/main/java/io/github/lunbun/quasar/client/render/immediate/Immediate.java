@@ -1,4 +1,4 @@
-package io.github.lunbun.quasar.client.render.stage;
+package io.github.lunbun.quasar.client.render.immediate;
 
 import io.github.lunbun.pulsar.PulsarApplication;
 import io.github.lunbun.pulsar.component.drawing.CommandBuffer;
@@ -6,6 +6,7 @@ import io.github.lunbun.pulsar.component.drawing.Framebuffer;
 import io.github.lunbun.pulsar.component.pipeline.GraphicsPipeline;
 import io.github.lunbun.pulsar.component.pipeline.RenderPass;
 import io.github.lunbun.pulsar.component.pipeline.Shader;
+import io.github.lunbun.pulsar.component.texture.Texture;
 import io.github.lunbun.pulsar.component.uniform.DescriptorSetLayout;
 import io.github.lunbun.pulsar.component.uniform.Uniform;
 import io.github.lunbun.pulsar.component.vertex.Buffer;
@@ -20,15 +21,17 @@ import org.joml.Matrix4f;
 
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 public enum Immediate {
     POSITION_COLOR(vertexBuilder -> {
         vertexBuilder.attribute(DataType.VEC3, 0);
         vertexBuilder.attribute(DataType.UINT, 1);
-    }, new Shader("shader/positionColor.vert", "shader/positionColor.frag"), false);
+    }, new Shader("shaders/positionColor.vert", "shaders/positionColor.frag"), false);
 
-    public static Immediate[] VALUES = Immediate.values();
+//    public static Immediate[] VALUES = Immediate.values();
+    public static Immediate[] VALUES = new Immediate[] { };
 
     private final boolean useIndexBuffer;
     private final Shader shader;
@@ -42,6 +45,7 @@ public enum Immediate {
     private final List<ImmediateFrame> frames;
     private final Matrix4f matrix;
     private final List<Mesh> submittedMeshes;
+    private final Texture texture;
 
     private ByteBuffer vertices;
     private ByteBuffer indices;
@@ -82,6 +86,9 @@ public enum Immediate {
         this.submittedMeshes = new ObjectArrayList<>();
         this.vertices = ByteBuffer.allocate(0);
         this.indices = ByteBuffer.allocate(0);
+        this.texture = QuasarRenderer.pulsar.textureLoader.loadFile(
+                Objects.requireNonNull(ClassLoader.getSystemClassLoader().getResource("textures/texture.jpg"))
+                        .toExternalForm());
     }
 
     private void recreateFrame(int currentFrame) {
@@ -115,6 +122,7 @@ public enum Immediate {
     }
 
     public void destroy() {
+        this.texture.destroy();
         this.descriptorSetLayout.destroy();
 
         for (ImmediateFrame frame : this.frames) {

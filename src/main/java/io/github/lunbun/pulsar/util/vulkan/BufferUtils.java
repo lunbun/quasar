@@ -5,6 +5,7 @@ import io.github.lunbun.pulsar.component.drawing.CommandPool;
 import io.github.lunbun.pulsar.component.setup.LogicalDevice;
 import io.github.lunbun.pulsar.component.setup.PhysicalDevice;
 import io.github.lunbun.pulsar.component.setup.QueueManager;
+import io.github.lunbun.pulsar.component.vertex.AllocResult;
 import io.github.lunbun.pulsar.component.vertex.MemoryAllocator;
 import io.github.lunbun.pulsar.struct.setup.QueueFamily;
 import io.github.lunbun.pulsar.struct.vertex.BufferData;
@@ -62,8 +63,9 @@ public final class BufferUtils {
 
         VkMemoryRequirements memoryRequirements = getMemoryRequirements(device, buffer, stack);
         int memoryType = findMemoryType(physicalDevice, memoryRequirements.memoryTypeBits(), properties);
-        long memory = allocator.heap(memoryType);
-        int pointer = allocator.malloc(memoryType, (int) memoryRequirements.size());
+        AllocResult allocResult = allocator.mallocAligned(memoryType, (int) memoryRequirements.size(), (int) memoryRequirements.alignment());
+        long memory = allocResult.heap;
+        int pointer = allocResult.pointer;
 
         VK10.vkBindBufferMemory(device.device, buffer, memory, pointer);
         return new BufferData(buffer, memoryType, memory, pointer, size, (int) memoryRequirements.size());
@@ -71,26 +73,14 @@ public final class BufferUtils {
 
     public static void copyBuffer(CommandPool commandPool, QueueManager queues, long src, long dst, int size) {
         CommandBuffer buffer = commandPool.allocateBuffer();
-
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            buffer.startRecordingOneTimeSubmit();
-            buffer.copyBuffer(src, dst, size);
-            buffer.endRecording();
-
-            VkSubmitInfo submitInfo = VkSubmitInfo.callocStack(stack);
-            submitInfo.sType(VK10.VK_STRUCTURE_TYPE_SUBMIT_INFO);
-            submitInfo.pCommandBuffers(stack.pointers(buffer.buffer));
-
-            VK10.vkQueueSubmit(queues.getQueue(QueueFamily.GRAPHICS), submitInfo, VK10.VK_NULL_HANDLE);
-            VK10.vkQueueWaitIdle(queues.getQueue(QueueFamily.GRAPHICS));
-
-            commandPool.freeBuffer(buffer);
-        }
+        buffer.startRecordingOneTimeSubmit();
+        buffer.copyBuffer(src, dst, size);
+        buffer.endRecordingOneTimeSubmit(queues.getQueue(QueueFamily.GRAPHICS), commandPool);
     }
 
     public static void destroy(LogicalDevice device, MemoryAllocator allocator, BufferData data) {
         VK10.vkDestroyBuffer(device.device, data.buffer, null);
-        allocator.free(data.memoryType, data.pointer, data.allocSize);
+        allocator.free(data.memory, data.memoryType, data.pointer, data.allocSize);
     }
 
     public static void uploadData(LogicalDevice device, PhysicalDevice physicalDevice, MemoryAllocator allocator,

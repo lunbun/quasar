@@ -1,7 +1,7 @@
 package io.github.lunbun.quasar.mixin.vulkan;
 
 import com.mojang.blaze3d.platform.GlStateManager;
-import io.github.lunbun.quasar.client.render.stage.Immediate;
+import io.github.lunbun.quasar.client.render.immediate.Immediate;
 import net.minecraft.client.render.BufferRenderer;
 import net.minecraft.client.render.VertexFormat;
 import net.minecraft.client.render.VertexFormats;

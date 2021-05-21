@@ -1,4 +1,4 @@
-package io.github.lunbun.quasar.client.render.stage;
+package io.github.lunbun.quasar.client.render.immediate;
 
 import io.github.lunbun.pulsar.component.uniform.DescriptorSet;
 import io.github.lunbun.pulsar.component.vertex.Buffer;

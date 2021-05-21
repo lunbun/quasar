@@ -7,9 +7,8 @@ import io.github.lunbun.pulsar.struct.setup.GraphicsCardPreference;
 import io.github.lunbun.pulsar.struct.setup.QueueFamily;
 import io.github.lunbun.quasar.Quasar;
 import io.github.lunbun.quasar.client.engine.framework.glfw.GLFWWindow;
-import io.github.lunbun.quasar.client.render.stage.Immediates;
-import net.minecraft.client.gui.DrawableHelper;
-import net.minecraft.client.util.math.MatrixStack;
+import io.github.lunbun.quasar.client.render.immediate.Immediates;
+import io.github.lunbun.quasar.client.render.test.TestRenderer;
 
 public class QuasarRenderer {
     public static final PulsarApplication pulsar = new PulsarApplication("Minecraft");
@@ -39,19 +38,24 @@ public class QuasarRenderer {
         pulsar.requestGraphicsCard(preference);
 
         pulsar.addRecreateHandler(ignored -> {
+            TestRenderer.recreateFramebuffers();
             Immediates.recreateFramebuffers();
         });
 
         pulsar.addCommandBufferDestructor(ignored -> {
+            TestRenderer.destroyFramebuffers();
             Immediates.destroyFramebuffers();
         });
 
         pulsar.addCommandBufferRecorder((commandBuffer, index, currentFrame) -> {
+            TestRenderer.recordCommandBuffers(commandBuffer, index, currentFrame);
             Immediates.recordCommandBuffers(commandBuffer, index, currentFrame);
         });
 
         pulsar.initialize();
 
+        TestRenderer.init();
+        TestRenderer.recreateFramebuffers();
         Immediates.recreateFramebuffers();
 
         System.out.print("0 fps");
@@ -61,7 +65,7 @@ public class QuasarRenderer {
 
         while (!GLFWWindow.windowShouldClose(window)) {
             GLFWWindow.pollEvents();
-            DrawableHelper.fill(new MatrixStack(), 0, 0, 1, 1, 0xffffffff);
+//            DrawableHelper.fill(new MatrixStack(), 0, 0, 1, 1, 0xffffffff);
             pulsar.frameRenderer.drawFrame();
 
             ++fps;
@@ -81,6 +85,7 @@ public class QuasarRenderer {
     }
 
     public static void cleanup() {
+        TestRenderer.destroy();
         Immediates.destroy();
         pulsar.exit();
     }

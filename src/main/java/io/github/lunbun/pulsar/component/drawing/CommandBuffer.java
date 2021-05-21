@@ -4,6 +4,7 @@ import io.github.lunbun.pulsar.component.pipeline.GraphicsPipeline;
 import io.github.lunbun.pulsar.component.pipeline.RenderPass;
 import io.github.lunbun.pulsar.component.presentation.SwapChain;
 import io.github.lunbun.pulsar.component.uniform.DescriptorSet;
+import io.github.lunbun.pulsar.struct.setup.QueueFamily;
 import io.github.lunbun.pulsar.struct.vertex.Mesh;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -91,6 +92,18 @@ public final class CommandBuffer {
         }
     }
 
+    public void pipelineBarrier(VkImageMemoryBarrier.Buffer pBarriers, int srcStage, int dstStage) {
+        this.assertRecording();
+        VK10.vkCmdPipelineBarrier(this.buffer, srcStage, dstStage, 0, null,
+                null, pBarriers);
+    }
+
+    public void copyBufferToImage(long buffer, long image, VkBufferImageCopy.Buffer pRegions) {
+        this.assertRecording();
+        // TODO: copying different regions
+        VK10.vkCmdCopyBufferToImage(this.buffer, buffer, image, VK10.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, pRegions);
+    }
+
     public void bindPipeline(GraphicsPipeline graphicsPipeline) {
         this.assertRenderPass();
         VK10.vkCmdBindPipeline(this.buffer, VK10.VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipeline);
@@ -137,6 +150,26 @@ public final class CommandBuffer {
         if (VK10.vkEndCommandBuffer(this.buffer) != VK10.VK_SUCCESS) {
             throw new RuntimeException("Failed to record command buffer!");
         }
+        this.isRecording = false;
+    }
+
+    public void endRecordingOneTimeSubmit(VkQueue queue, CommandPool commandPool) {
+        this.assertRecording();
+        if (VK10.vkEndCommandBuffer(this.buffer) != VK10.VK_SUCCESS) {
+            throw new RuntimeException("Failed to record command buffer!");
+        }
+
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkSubmitInfo submitInfo = VkSubmitInfo.callocStack(stack);
+            submitInfo.sType(VK10.VK_STRUCTURE_TYPE_SUBMIT_INFO);
+            submitInfo.pCommandBuffers(stack.pointers(this.buffer));
+
+            VK10.vkQueueSubmit(queue, submitInfo, VK10.VK_NULL_HANDLE);
+            VK10.vkQueueWaitIdle(queue);
+
+            commandPool.freeBuffer(this);
+        }
+
         this.isRecording = false;
     }
 }

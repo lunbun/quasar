@@ -39,12 +39,16 @@ public final class GraphicsPipeline {
         }
 
         // TODO: multiple render passes
-        public GraphicsPipeline createPipeline(Shader shader, Blend blendFunc, RenderPass renderPass, DescriptorSetLayout descriptorSetLayout, Vertex.Builder vertexBuilder) {
+        public GraphicsPipeline createPipeline(Shader shader, Blend blendFunc, RenderPass renderPass, DescriptorSetLayout[] descriptorSetLayouts, Vertex.Builder vertexBuilder) {
             GraphicsPipeline pipeline = new GraphicsPipeline(renderPass);
-            this.createVkPipeline(pipeline, shader, blendFunc, renderPass, descriptorSetLayout, vertexBuilder);
+            this.createVkPipeline(pipeline, shader, blendFunc, renderPass, descriptorSetLayouts, vertexBuilder);
 
             this.pipelinePool.add(pipeline);
             return pipeline;
+        }
+
+        public GraphicsPipeline createPipeline(Shader shader, Blend blendFunc, RenderPass renderPass, DescriptorSetLayout descriptorSetLayout, Vertex.Builder vertexBuilder) {
+            return this.createPipeline(shader, blendFunc, renderPass, new DescriptorSetLayout[] { descriptorSetLayout }, vertexBuilder);
         }
 
         public void destroy() {
@@ -59,7 +63,7 @@ public final class GraphicsPipeline {
             VK10.vkDestroyPipelineLayout(this.device.device, pipeline.pipelineLayout, null);
         }
 
-        private void createVkPipeline(GraphicsPipeline pipeline, Shader shader, Blend blend, RenderPass renderPass, DescriptorSetLayout descriptorSetLayout, Vertex.Builder vertexBuilder) {
+        private void createVkPipeline(GraphicsPipeline pipeline, Shader shader, Blend blend, RenderPass renderPass, DescriptorSetLayout[] descriptorSetLayouts, Vertex.Builder vertexBuilder) {
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 VkPipelineShaderStageCreateInfo.Buffer shaderStageInfos = VkPipelineShaderStageCreateInfo.callocStack(2, stack);
 
@@ -148,8 +152,12 @@ public final class GraphicsPipeline {
 
                 VkPipelineLayoutCreateInfo pipelineLayoutInfo = VkPipelineLayoutCreateInfo.callocStack(stack);
                 pipelineLayoutInfo.sType(VK10.VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO);
-                if (descriptorSetLayout != null) {
-                    pipelineLayoutInfo.pSetLayouts(stack.longs(descriptorSetLayout.layout));
+                if (descriptorSetLayouts != null && descriptorSetLayouts.length != 0) {
+                    LongBuffer pSetLayouts = stack.mallocLong(descriptorSetLayouts.length);
+                    for (int i = 0; i < descriptorSetLayouts.length; ++i) {
+                        pSetLayouts.put(i, descriptorSetLayouts[i].layout);
+                    }
+                    pipelineLayoutInfo.pSetLayouts(pSetLayouts);
                 }
 
                 if (VK10.vkCreatePipelineLayout(this.device.device, pipelineLayoutInfo, null, pPipelineLayout) != VK10.VK_SUCCESS) {

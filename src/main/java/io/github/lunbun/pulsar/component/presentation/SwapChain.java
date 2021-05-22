@@ -126,7 +126,7 @@ public final class SwapChain {
         }
 
         private static int chooseSwapPresentMode(IntBuffer availablePresentModes) {
-            int preferredMode = PulsarSettings.PREFER_UNLIMITED_FPS ? KHRSurface.VK_PRESENT_MODE_IMMEDIATE_KHR :
+            int preferredMode = PulsarSettings.PREFER_VSYNC ? KHRSurface.VK_PRESENT_MODE_MAILBOX_KHR :
                     KHRSurface.VK_PRESENT_MODE_IMMEDIATE_KHR;
 
             for(int i = 0; i < availablePresentModes.capacity(); i++) {

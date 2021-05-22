@@ -15,6 +15,7 @@ public class GraphicsCardPreference {
 
     public final Set<String> extensionsSet;
     public final boolean hasSwapChain;
+    public boolean hasAnisotropicFiltering;
 
     public GraphicsCardPreference(DeviceType type, List<QueueFamily> queues, List<DeviceExtension> extensions) {
         this.type = type;

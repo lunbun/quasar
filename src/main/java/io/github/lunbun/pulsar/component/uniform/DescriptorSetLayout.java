@@ -1,6 +1,9 @@
 package io.github.lunbun.pulsar.component.uniform;
 
 import io.github.lunbun.pulsar.component.setup.LogicalDevice;
+import io.github.lunbun.pulsar.struct.uniform.LayoutData;
+import io.github.lunbun.pulsar.util.shader.ShaderType;
+import io.github.lunbun.pulsar.util.uniform.DescriptorSetType;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VkDescriptorSetLayoutBinding;
@@ -29,18 +32,27 @@ public final class DescriptorSetLayout {
             this.device = device;
         }
 
-        public DescriptorSetLayout createDescriptorSetLayout() {
+        public DescriptorSetLayout createDescriptorSetLayout(int binding, DescriptorSetType type, ShaderType stage) {
+            return createDescriptorSetLayout(new LayoutData[] { new LayoutData(binding, type, stage) });
+        }
+
+        public DescriptorSetLayout createDescriptorSetLayout(LayoutData[] layoutData) {
             try (MemoryStack stack = MemoryStack.stackPush()) {
-                VkDescriptorSetLayoutBinding.Buffer uboLayoutBinding = VkDescriptorSetLayoutBinding.callocStack(1, stack);
-                uboLayoutBinding.binding(0);
-                uboLayoutBinding.descriptorType(VK10.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
-                uboLayoutBinding.descriptorCount(1);
-                uboLayoutBinding.pImmutableSamplers(null);
-                uboLayoutBinding.stageFlags(VK10.VK_SHADER_STAGE_VERTEX_BIT);
+                VkDescriptorSetLayoutBinding.Buffer pLayoutBindings = VkDescriptorSetLayoutBinding.callocStack(layoutData.length, stack);
+                for (int i = 0; i < layoutData.length; ++i) {
+                    LayoutData data = layoutData[i];
+
+                    VkDescriptorSetLayoutBinding layoutBinding = pLayoutBindings.get(i);
+                    layoutBinding.binding(data.binding);
+                    layoutBinding.descriptorType(data.type.vulkan);
+                    layoutBinding.descriptorCount(1);
+                    layoutBinding.pImmutableSamplers(null);
+                    layoutBinding.stageFlags(data.stage.bits);
+                }
 
                 VkDescriptorSetLayoutCreateInfo layoutInfo = VkDescriptorSetLayoutCreateInfo.callocStack(stack);
                 layoutInfo.sType(VK10.VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO);
-                layoutInfo.pBindings(uboLayoutBinding);
+                layoutInfo.pBindings(pLayoutBindings);
 
                 LongBuffer pDescriptorSetLayout = stack.mallocLong(1);
 

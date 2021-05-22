@@ -17,7 +17,7 @@ import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 
 public final class Texture extends ImageData {
-    private final long imageView;
+    public final long imageView;
     private final Loader loader;
 
     protected Texture(BufferData bufferData, long imageView, Loader loader) {

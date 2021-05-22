@@ -46,6 +46,7 @@ public class QuasarRenderer {
                 new QueueFamily[] { QueueFamily.GRAPHICS, QueueFamily.PRESENT },
                 new DeviceExtension[] { DeviceExtension.SWAP_CHAIN }
         );
+        preference.hasAnisotropicFiltering = true;
         pulsar.requestGraphicsCard(preference);
 
         pulsar.addRecreateHandler(ignored -> {

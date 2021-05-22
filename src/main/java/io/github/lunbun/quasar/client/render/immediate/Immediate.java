@@ -12,7 +12,11 @@ import io.github.lunbun.pulsar.component.uniform.Uniform;
 import io.github.lunbun.pulsar.component.vertex.Buffer;
 import io.github.lunbun.pulsar.component.vertex.Vertex;
 import io.github.lunbun.pulsar.struct.pipeline.Blend;
+import io.github.lunbun.pulsar.struct.uniform.DescriptorSetConfiguration;
+import io.github.lunbun.pulsar.struct.uniform.UniformConfiguration;
 import io.github.lunbun.pulsar.struct.vertex.Mesh;
+import io.github.lunbun.pulsar.util.shader.ShaderType;
+import io.github.lunbun.pulsar.util.uniform.DescriptorSetType;
 import io.github.lunbun.pulsar.util.vulkan.DataType;
 import io.github.lunbun.quasar.client.util.QuasarSettings;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -71,7 +75,8 @@ public enum Immediate {
         this.matrix.identity();
         this.matrix.m11(-this.matrix.m11());
 
-        this.descriptorSetLayout = pulsar.descriptorSetLayouts.createDescriptorSetLayout();
+        this.descriptorSetLayout = pulsar.descriptorSetLayouts.createDescriptorSetLayout(0,
+                DescriptorSetType.UNIFORM, ShaderType.VERTEX_SHADER);
 
         this.blendFunc = new Blend(
                 Blend.Factor.SRC_ALPHA, Blend.Operator.ADD, Blend.Factor.ONE_MINUS_SRC_ALPHA,
@@ -85,7 +90,9 @@ public enum Immediate {
             frame.descriptorSet = pulsar.descriptorPool.allocateSet(descriptorSetLayout);
             frame.uniformBuffer = pulsar.buffers.createUniformBuffer(uniformBuilder.sizeof(), true);
             pulsar.buffers.uploadUniform(frame.uniformBuffer, this.uniform);
-            frame.descriptorSet.configure(frame.uniformBuffer);
+            frame.descriptorSet.configure(new DescriptorSetConfiguration[] {
+                    new UniformConfiguration(frame.uniformBuffer, 0)
+            });
         }
 
         this.submittedMeshes = new ObjectArrayList<>();

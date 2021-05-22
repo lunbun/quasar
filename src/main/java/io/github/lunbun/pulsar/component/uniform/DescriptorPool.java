@@ -13,13 +13,19 @@ public final class DescriptorPool {
 
     public DescriptorPool(LogicalDevice device, int size) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkDescriptorPoolSize.Buffer poolSize = VkDescriptorPoolSize.callocStack(1, stack);
+            VkDescriptorPoolSize.Buffer pPoolSizes = VkDescriptorPoolSize.callocStack(2, stack);
+
+            VkDescriptorPoolSize poolSize = pPoolSizes.get(0);
             poolSize.type(VK10.VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            poolSize.descriptorCount(size);
+
+            poolSize = pPoolSizes.get(1);
+            poolSize.type(VK10.VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
             poolSize.descriptorCount(size);
 
             VkDescriptorPoolCreateInfo poolInfo = VkDescriptorPoolCreateInfo.callocStack(stack);
             poolInfo.sType(VK10.VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO);
-            poolInfo.pPoolSizes(poolSize);
+            poolInfo.pPoolSizes(pPoolSizes);
             poolInfo.maxSets(size);
 
             LongBuffer pDescriptorPool = stack.mallocLong(1);
@@ -47,8 +53,14 @@ public final class DescriptorPool {
             allocInfo.pSetLayouts(pSetLayouts);
 
             LongBuffer pDescriptorSets = stack.mallocLong(count);
-            if (VK10.vkAllocateDescriptorSets(this.device.device, allocInfo, pDescriptorSets) != VK10.VK_SUCCESS) {
-                throw new RuntimeException("Failed to allocate descriptor sets!");
+            int vkRes = VK10.vkAllocateDescriptorSets(this.device.device, allocInfo, pDescriptorSets);
+            if (vkRes != VK10.VK_SUCCESS) {
+                // Validation layers don't catch this, we have to manually. This requires Vulkan 1.1, though.
+                if (vkRes == VK11.VK_ERROR_OUT_OF_POOL_MEMORY) {
+                    throw new RuntimeException("Descriptor pool out of memory!");
+                } else {
+                    throw new RuntimeException("Failed to allocate descriptor sets!");
+                }
             }
 
             for (int i = 0; i < count; ++i) {

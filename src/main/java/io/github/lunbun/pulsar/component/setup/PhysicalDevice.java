@@ -30,6 +30,11 @@ public final class PhysicalDevice {
         this.vendor = vendor;
     }
 
+    public VkPhysicalDeviceLimits getLimits(MemoryStack stack) {
+        VkPhysicalDeviceProperties properties = Selector.queryPhysicalDeviceProperties(this.device, stack);
+        return properties.limits();
+    }
+
     public static final class Selector {
         public static PhysicalDevice choosePhysicalDevice(Instance instanceManager, WindowSurface surface, GraphicsCardPreference preference) {
             try (MemoryStack stack = MemoryStack.stackPush()) {
@@ -72,6 +77,12 @@ public final class PhysicalDevice {
             return properties;
         }
 
+        private static VkPhysicalDeviceFeatures queryPhysicalDeviceFeatures(VkPhysicalDevice device, MemoryStack stack) {
+            VkPhysicalDeviceFeatures features = VkPhysicalDeviceFeatures.mallocStack(stack);
+            VK10.vkGetPhysicalDeviceFeatures(device, features);
+            return features;
+        }
+
         private static boolean checkDeviceExtensionSupport(VkPhysicalDevice device, GraphicsCardPreference preference) {
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 IntBuffer extensionCount = stack.ints(0);
@@ -101,6 +112,13 @@ public final class PhysicalDevice {
                 if (preference.hasSwapChain) {
                     SwapChain.Support.SwapChainSupportDetails swapChainSupport = SwapChain.Support.querySwapChainSupport(device, surface, stack);
                     if ((!swapChainSupport.formats.hasRemaining()) || (!swapChainSupport.presentModes.hasRemaining())) {
+                        return -1;
+                    }
+                }
+
+                if (preference.hasAnisotropicFiltering) {
+                    VkPhysicalDeviceFeatures features = queryPhysicalDeviceFeatures(device, stack);
+                    if (!features.samplerAnisotropy()) {
                         return -1;
                     }
                 }

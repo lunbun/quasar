@@ -5,5 +5,5 @@ package io.github.lunbun.pulsar.util;
  */
 public class PulsarSettings {
     public static final boolean RESET_COMMAND_BUFFERS = true;
-    public static final boolean PREFER_UNLIMITED_FPS = false;
+    public static final boolean PREFER_VSYNC = true;
 }

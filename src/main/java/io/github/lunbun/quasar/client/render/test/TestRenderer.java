@@ -7,12 +7,19 @@ import io.github.lunbun.pulsar.component.pipeline.GraphicsPipeline;
 import io.github.lunbun.pulsar.component.pipeline.RenderPass;
 import io.github.lunbun.pulsar.component.pipeline.Shader;
 import io.github.lunbun.pulsar.component.texture.Texture;
+import io.github.lunbun.pulsar.component.texture.TextureSampler;
 import io.github.lunbun.pulsar.component.uniform.DescriptorSetLayout;
 import io.github.lunbun.pulsar.component.uniform.Uniform;
 import io.github.lunbun.pulsar.component.vertex.Buffer;
 import io.github.lunbun.pulsar.component.vertex.Vertex;
 import io.github.lunbun.pulsar.struct.pipeline.Blend;
+import io.github.lunbun.pulsar.struct.uniform.DescriptorSetConfiguration;
+import io.github.lunbun.pulsar.struct.uniform.LayoutData;
+import io.github.lunbun.pulsar.struct.uniform.SamplerConfiguration;
+import io.github.lunbun.pulsar.struct.uniform.UniformConfiguration;
 import io.github.lunbun.pulsar.struct.vertex.Mesh;
+import io.github.lunbun.pulsar.util.shader.ShaderType;
+import io.github.lunbun.pulsar.util.uniform.DescriptorSetType;
 import io.github.lunbun.pulsar.util.vulkan.DataType;
 import io.github.lunbun.quasar.client.engine.framework.glfw.GLFWWindow;
 import io.github.lunbun.quasar.client.render.VulkanRenderer;
@@ -31,15 +38,18 @@ public final class TestRenderer implements VulkanRenderer {
     public GraphicsPipeline graphicsPipeline;
     public Shader shader;
     public Blend blendFunc;
+
     public DescriptorSetLayout descriptorSetLayout;
-    public Vertex.Builder vertexBuilder;
     public Uniform uniform;
     public Matrix4f model;
     public Matrix4f view;
     public Matrix4f proj;
+    public Texture texture;
+    public TextureSampler textureSampler;
+
+    public Vertex.Builder vertexBuilder;
     public List<TestFrame> frames;
     public Mesh mesh;
-    public Texture texture;
     public List<Framebuffer> framebuffers;
 
     @Override
@@ -49,11 +59,12 @@ public final class TestRenderer implements VulkanRenderer {
         this.vertexBuilder = new Vertex.Builder();
         this.vertexBuilder.attribute(DataType.VEC2, 0);
         this.vertexBuilder.attribute(DataType.VEC3, 1);
+        this.vertexBuilder.attribute(DataType.VEC2, 2);
         Vertex[] vertices = new Vertex[] {
-                this.vertexBuilder.createVertex(new Vector2f(-0.5f, -0.5f), new Vector3f(1.0f, 0.0f, 0.0f)),
-                this.vertexBuilder.createVertex(new Vector2f(0.5f, -0.5f), new Vector3f(0.0f, 1.0f, 0.0f)),
-                this.vertexBuilder.createVertex(new Vector2f(0.5f, 0.5f), new Vector3f(0.0f, 0.0f, 1.0f)),
-                this.vertexBuilder.createVertex(new Vector2f(-0.5f, 0.5f), new Vector3f(1.0f, 1.0f, 1.0f))
+                this.vertexBuilder.createVertex(new Vector2f(-0.5f, -0.5f), new Vector3f(1, 0, 0), new Vector2f(1, 0)),
+                this.vertexBuilder.createVertex(new Vector2f(0.5f, -0.5f), new Vector3f(0, 1, 0), new Vector2f(0, 0)),
+                this.vertexBuilder.createVertex(new Vector2f(0.5f, 0.5f), new Vector3f(0, 0, 1), new Vector2f(0, 1)),
+                this.vertexBuilder.createVertex(new Vector2f(-0.5f, 0.5f), new Vector3f(1, 1, 1), new Vector2f(1, 1))
         };
         short[] indices = new short[] { 0, 1, 2, 2, 3, 0 };
 
@@ -75,7 +86,10 @@ public final class TestRenderer implements VulkanRenderer {
         this.view = new Matrix4f();
         this.proj = new Matrix4f();
 
-        this.descriptorSetLayout = pulsar.descriptorSetLayouts.createDescriptorSetLayout();
+        this.descriptorSetLayout = pulsar.descriptorSetLayouts.createDescriptorSetLayout(new LayoutData[] {
+                        new LayoutData(0, DescriptorSetType.UNIFORM, ShaderType.VERTEX_SHADER),
+                        new LayoutData(1, DescriptorSetType.IMAGE_SAMPLER, ShaderType.FRAGMENT_SHADER)
+                });
 
         this.shader = new Shader("shaders/test.vert", "shaders/test.frag");
         this.blendFunc = new Blend(
@@ -83,22 +97,28 @@ public final class TestRenderer implements VulkanRenderer {
                 Blend.Factor.ONE, Blend.Operator.ADD, Blend.Factor.ZERO
         );
 
+        this.texture = pulsar.textureLoader.loadFile(
+                Objects.requireNonNull(ClassLoader.getSystemClassLoader().getResource("textures/texture.jpg"))
+                        .toExternalForm());
+        this.textureSampler = pulsar.textureSamplers.createSampler(true);
+
         this.frames = new ObjectArrayList<>();
         for (int i = 0; i < PulsarApplication.MAX_FRAMES_IN_FLIGHT; ++i) {
             TestFrame frame = new TestFrame();
             this.frames.add(frame);
             frame.descriptorSet = pulsar.descriptorPool.allocateSet(this.descriptorSetLayout);
-            frame.uniformBuffer = pulsar.buffers.createUniformBuffer(uniformBuilder.sizeof(), false);
-            frame.descriptorSet.configure(frame.uniformBuffer);
-        }
 
-        this.texture = pulsar.textureLoader.loadFile(
-                Objects.requireNonNull(ClassLoader.getSystemClassLoader().getResource("textures/texture.jpg"))
-                        .toExternalForm());
+            frame.uniformBuffer = pulsar.buffers.createUniformBuffer(uniformBuilder.sizeof(), false);
+            frame.descriptorSet.configure(new DescriptorSetConfiguration[] {
+                    new UniformConfiguration(frame.uniformBuffer, 0),
+                    new SamplerConfiguration(this.texture, this.textureSampler, 1)
+            });
+        }
     }
 
     @Override
     public void destroy() {
+        this.textureSampler.destroy();
         this.texture.destroy();
         this.mesh.destroy();
         this.descriptorSetLayout.destroy();

@@ -13,6 +13,7 @@ import io.github.lunbun.pulsar.component.presentation.SwapChainManager;
 import io.github.lunbun.pulsar.component.presentation.WindowSurface;
 import io.github.lunbun.pulsar.component.setup.*;
 import io.github.lunbun.pulsar.component.texture.Texture;
+import io.github.lunbun.pulsar.component.texture.TextureSampler;
 import io.github.lunbun.pulsar.component.uniform.DescriptorPool;
 import io.github.lunbun.pulsar.component.uniform.DescriptorSetLayout;
 import io.github.lunbun.pulsar.component.vertex.Buffer;
@@ -62,6 +63,7 @@ public final class PulsarApplication {
     public DescriptorSetLayout.Builder descriptorSetLayouts;
     public DescriptorPool descriptorPool;
     public Texture.Loader textureLoader;
+    public TextureSampler.Builder textureSamplers;
 
     public PulsarApplication(String name) {
         this.name = name;
@@ -148,6 +150,7 @@ public final class PulsarApplication {
         this.descriptorSetLayouts = new DescriptorSetLayout.Builder(this.logicalDevice);
         this.descriptorPool = new DescriptorPool(this.logicalDevice, 2 * MAX_FRAMES_IN_FLIGHT);
         this.textureLoader = new Texture.Loader(this.logicalDevice, physicalDevice, this.memoryAllocator, this.commandPool, this.queues);
+        this.textureSamplers = new TextureSampler.Builder(this.logicalDevice, physicalDevice);
         LOGGER.info("Setup pulsar-quasar interaction");
 
         this.swapChainManager.assign(this.logicalDevice, swapChain, this.framebuffers, this.commandPool,

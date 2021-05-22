@@ -45,6 +45,7 @@ public final class LogicalDevice {
                 }
 
                 VkPhysicalDeviceFeatures deviceFeatures = VkPhysicalDeviceFeatures.callocStack(stack);
+                deviceFeatures.samplerAnisotropy(preference.hasAnisotropicFiltering);
 
                 VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.callocStack(stack);
                 createInfo.sType(VK10.VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO);

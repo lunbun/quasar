@@ -61,11 +61,8 @@ public final class ImageUtils {
         return new ImageData(textureImage, memoryType, memory, pointer, imageSize, (int) memoryRequirements.size());
     }
 
-    public static void transitionImageLayout(QueueManager queues, CommandPool commandPool, long image, int format,
-                                             int oldLayout, int newLayout) {
-        CommandBuffer buffer = commandPool.allocateBuffer();
-        buffer.startRecordingOneTimeSubmit();
-
+    public static void transitionImageLayout(long image, int format, int oldLayout, int newLayout,
+                                             CommandBuffer commandBuffer) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.callocStack(1, stack);
             barrier.sType(VK10.VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER);
@@ -103,17 +100,11 @@ public final class ImageUtils {
                 throw new UnsupportedOperationException("Unsupported layout transition!");
             }
 
-            buffer.pipelineBarrier(barrier, sourceStage, destinationStage);
+            commandBuffer.pipelineBarrier(barrier, sourceStage, destinationStage);
         }
-
-        buffer.endRecordingOneTimeSubmit(queues.getQueue(QueueFamily.GRAPHICS), commandPool);
     }
 
-    public static void copyBufferToImage(QueueManager queues, CommandPool commandPool, long buffer, long image,
-                                         int width, int height) {
-        CommandBuffer commandBuffer = commandPool.allocateBuffer();
-        commandBuffer.startRecordingOneTimeSubmit();
-
+    public static void copyBufferToImage(long buffer, long image, int width, int height, CommandBuffer commandBuffer) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkBufferImageCopy.Buffer region = VkBufferImageCopy.callocStack(1, stack);
             region.bufferOffset(0);
@@ -128,8 +119,6 @@ public final class ImageUtils {
 
             commandBuffer.copyBufferToImage(buffer, image, region);
         }
-
-        commandBuffer.endRecordingOneTimeSubmit(queues.getQueue(QueueFamily.GRAPHICS), commandPool);
     }
 
     public static void uploadPixels(LogicalDevice device, PhysicalDevice physicalDevice, MemoryAllocator allocator,
@@ -137,24 +126,27 @@ public final class ImageUtils {
                                     int format, ImageData image, ByteBuffer pixels, MemoryStack stack,
                                     boolean useStagingBuffer) {
         if (useStagingBuffer) {
-            // TODO: combine command buffers for extra performance
-            // (see end of https://vulkan-tutorial.com/Texture_mapping/Images transition barrier masks)
             BufferData stagingBuffer = BufferUtils.createBuffer(device, physicalDevice, allocator,
                     imageSize, VK10.VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK10.VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
                             VK10.VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stack);
-            // we're creating a staging buffer manually, so we don't want to stage the staging buffer
-            BufferUtils.uploadData(device, physicalDevice, allocator, commandPool,
-                    queues, stagingBuffer, (bufferCopy) -> {
-                        bufferCopy.put(pixels);
-                        bufferCopy.rewind();
-                        pixels.rewind();
-                    }, false);
 
-            transitionImageLayout(queues, commandPool, image.buffer, format, VK10.VK_IMAGE_LAYOUT_UNDEFINED,
-                    VK10.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-            copyBufferToImage(queues, commandPool, stagingBuffer.buffer, image.buffer, width, height);
-            transitionImageLayout(queues, commandPool, image.buffer, format, VK10.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                    VK10.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            CommandBuffer commandBuffer = commandPool.allocateBuffer();
+            commandBuffer.startRecordingOneTimeSubmit();
+            {
+                // we're creating a staging buffer manually, so we don't want to stage the staging buffer
+                BufferUtils.uploadData(device, physicalDevice, allocator, stagingBuffer, (bufferCopy) -> {
+                    bufferCopy.put(pixels);
+                    bufferCopy.rewind();
+                    pixels.rewind();
+                }, false, commandBuffer);
+
+                transitionImageLayout(image.buffer, format, VK10.VK_IMAGE_LAYOUT_UNDEFINED,
+                        VK10.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, commandBuffer);
+                copyBufferToImage(stagingBuffer.buffer, image.buffer, width, height, commandBuffer);
+                transitionImageLayout(image.buffer, format, VK10.VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                        VK10.VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, commandBuffer);
+            }
+            commandBuffer.endRecordingOneTimeSubmit(queues.getQueue(QueueFamily.GRAPHICS), commandPool);
 
             BufferUtils.destroy(device, allocator, stagingBuffer);
         } else {

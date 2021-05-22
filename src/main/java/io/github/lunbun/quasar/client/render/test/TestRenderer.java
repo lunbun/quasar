@@ -15,7 +15,7 @@ import io.github.lunbun.pulsar.struct.pipeline.Blend;
 import io.github.lunbun.pulsar.struct.vertex.Mesh;
 import io.github.lunbun.pulsar.util.vulkan.DataType;
 import io.github.lunbun.quasar.client.engine.framework.glfw.GLFWWindow;
-import io.github.lunbun.quasar.client.render.QuasarRenderer;
+import io.github.lunbun.quasar.client.render.VulkanRenderer;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
@@ -25,114 +25,122 @@ import java.util.List;
 import java.util.Objects;
 
 // based off of the vulkan tutorial
-public final class TestRenderer {
-    public static RenderPass renderPass;
-    public static GraphicsPipeline graphicsPipeline;
-    public static Shader shader;
-    public static Blend blendFunc;
-    public static DescriptorSetLayout descriptorSetLayout;
-    public static Vertex.Builder vertexBuilder;
-    public static Uniform uniform;
-    public static Matrix4f model;
-    public static Matrix4f view;
-    public static Matrix4f proj;
-    public static List<TestFrame> frames;
-    public static Mesh mesh;
-    public static Texture texture;
-    public static List<Framebuffer> framebuffers;
+public final class TestRenderer implements VulkanRenderer {
+    public PulsarApplication pulsar;
+    public RenderPass renderPass;
+    public GraphicsPipeline graphicsPipeline;
+    public Shader shader;
+    public Blend blendFunc;
+    public DescriptorSetLayout descriptorSetLayout;
+    public Vertex.Builder vertexBuilder;
+    public Uniform uniform;
+    public Matrix4f model;
+    public Matrix4f view;
+    public Matrix4f proj;
+    public List<TestFrame> frames;
+    public Mesh mesh;
+    public Texture texture;
+    public List<Framebuffer> framebuffers;
 
-    public static void init() {
-        vertexBuilder = new Vertex.Builder();
-        vertexBuilder.attribute(DataType.VEC2, 0);
-        vertexBuilder.attribute(DataType.VEC3, 1);
+    @Override
+    public void init(PulsarApplication pulsar) {
+        this.pulsar = pulsar;
+
+        this.vertexBuilder = new Vertex.Builder();
+        this.vertexBuilder.attribute(DataType.VEC2, 0);
+        this.vertexBuilder.attribute(DataType.VEC3, 1);
         Vertex[] vertices = new Vertex[] {
-                vertexBuilder.createVertex(new Vector2f(-0.5f, -0.5f), new Vector3f(1.0f, 0.0f, 0.0f)),
-                vertexBuilder.createVertex(new Vector2f(0.5f, -0.5f), new Vector3f(0.0f, 1.0f, 0.0f)),
-                vertexBuilder.createVertex(new Vector2f(0.5f, 0.5f), new Vector3f(0.0f, 0.0f, 1.0f)),
-                vertexBuilder.createVertex(new Vector2f(-0.5f, 0.5f), new Vector3f(1.0f, 1.0f, 1.0f))
+                this.vertexBuilder.createVertex(new Vector2f(-0.5f, -0.5f), new Vector3f(1.0f, 0.0f, 0.0f)),
+                this.vertexBuilder.createVertex(new Vector2f(0.5f, -0.5f), new Vector3f(0.0f, 1.0f, 0.0f)),
+                this.vertexBuilder.createVertex(new Vector2f(0.5f, 0.5f), new Vector3f(0.0f, 0.0f, 1.0f)),
+                this.vertexBuilder.createVertex(new Vector2f(-0.5f, 0.5f), new Vector3f(1.0f, 1.0f, 1.0f))
         };
         short[] indices = new short[] { 0, 1, 2, 2, 3, 0 };
 
-        Buffer vertexBuffer = QuasarRenderer.pulsar.buffers.createVertexBuffer(4, 4L * vertexBuilder.sizeof(),
+        Buffer vertexBuffer = pulsar.buffers.createVertexBuffer(4, 4L * this.vertexBuilder.sizeof(),
                 true);
-        Buffer indexBuffer = QuasarRenderer.pulsar.buffers.createIndexBuffer(6, true);
-        QuasarRenderer.pulsar.buffers.uploadVertices(vertexBuffer, vertices);
-        QuasarRenderer.pulsar.buffers.uploadIndices(indexBuffer, indices);
-        mesh = new Mesh(vertexBuffer, indexBuffer);
+        Buffer indexBuffer = pulsar.buffers.createIndexBuffer(6, true);
+        pulsar.buffers.uploadVertices(vertexBuffer, vertices);
+        pulsar.buffers.uploadIndices(indexBuffer, indices);
+        this.mesh = new Mesh(vertexBuffer, indexBuffer);
 
-        framebuffers = new ObjectArrayList<>();
+        this.framebuffers = new ObjectArrayList<>();
 
         Uniform.Builder uniformBuilder = new Uniform.Builder();
         uniformBuilder.uniform(DataType.MAT4);
         uniformBuilder.uniform(DataType.MAT4);
         uniformBuilder.uniform(DataType.MAT4);
-        uniform = uniformBuilder.createUniform();
-        model = new Matrix4f();
-        view = new Matrix4f();
-        proj = new Matrix4f();
+        this.uniform = uniformBuilder.createUniform();
+        this.model = new Matrix4f();
+        this.view = new Matrix4f();
+        this.proj = new Matrix4f();
 
-        descriptorSetLayout = QuasarRenderer.pulsar.descriptorSetLayouts.createDescriptorSetLayout();
+        this.descriptorSetLayout = pulsar.descriptorSetLayouts.createDescriptorSetLayout();
 
-        shader = new Shader("shaders/test.vert", "shaders/test.frag");
-        blendFunc = new Blend(
+        this.shader = new Shader("shaders/test.vert", "shaders/test.frag");
+        this.blendFunc = new Blend(
                 Blend.Factor.SRC_ALPHA, Blend.Operator.ADD, Blend.Factor.ONE_MINUS_SRC_ALPHA,
                 Blend.Factor.ONE, Blend.Operator.ADD, Blend.Factor.ZERO
         );
 
-        frames = new ObjectArrayList<>();
+        this.frames = new ObjectArrayList<>();
         for (int i = 0; i < PulsarApplication.MAX_FRAMES_IN_FLIGHT; ++i) {
             TestFrame frame = new TestFrame();
-            frames.add(frame);
-            frame.descriptorSet = QuasarRenderer.pulsar.descriptorPool.allocateSet(descriptorSetLayout);
-            frame.uniformBuffer = QuasarRenderer.pulsar.buffers.createUniformBuffer(uniformBuilder.sizeof(), false);
+            this.frames.add(frame);
+            frame.descriptorSet = pulsar.descriptorPool.allocateSet(this.descriptorSetLayout);
+            frame.uniformBuffer = pulsar.buffers.createUniformBuffer(uniformBuilder.sizeof(), false);
             frame.descriptorSet.configure(frame.uniformBuffer);
         }
 
-        texture = QuasarRenderer.pulsar.textureLoader.loadFile(
+        this.texture = pulsar.textureLoader.loadFile(
                 Objects.requireNonNull(ClassLoader.getSystemClassLoader().getResource("textures/texture.jpg"))
                         .toExternalForm());
     }
 
-    public static void destroy() {
-        texture.destroy();
-        mesh.destroy();
-        descriptorSetLayout.destroy();
+    @Override
+    public void destroy() {
+        this.texture.destroy();
+        this.mesh.destroy();
+        this.descriptorSetLayout.destroy();
 
-        for (TestFrame frame : frames) {
+        for (TestFrame frame : this.frames) {
             frame.uniformBuffer.destroy();
         }
     }
 
-    public static void recreateFramebuffers() {
-        renderPass = QuasarRenderer.pulsar.renderPasses.createRenderPass();
-        graphicsPipeline = QuasarRenderer.pulsar.pipelines.createPipeline(shader, blendFunc,
-                renderPass, descriptorSetLayout, vertexBuilder);
-        QuasarRenderer.pulsar.framebuffers.createFramebuffers(renderPass, framebuffers);
+    @Override
+    public void recreateFramebuffers() {
+        this.renderPass = this.pulsar.renderPasses.createRenderPass();
+        this.graphicsPipeline = this.pulsar.pipelines.createPipeline(this.shader, this.blendFunc,
+                this.renderPass, this.descriptorSetLayout, this.vertexBuilder);
+        this.pulsar.framebuffers.createFramebuffers(this.renderPass, this.framebuffers);
     }
 
-    public static void destroyFramebuffers() {
-        QuasarRenderer.pulsar.framebuffers.destroy(framebuffers);
+    @Override
+    public void destroyFramebuffers() {
+        this.pulsar.framebuffers.destroy(this.framebuffers);
     }
 
-    public static void recordCommandBuffers(CommandBuffer buffer, int framebufferIndex, int currentFrame) {
-        Framebuffer framebuffer = framebuffers.get(framebufferIndex);
-        TestFrame frame = frames.get(currentFrame);
+    @Override
+    public void recordCommandBuffers(CommandBuffer buffer, int framebufferIndex, int currentFrame) {
+        Framebuffer framebuffer = this.framebuffers.get(framebufferIndex);
+        TestFrame frame = this.frames.get(currentFrame);
 
-        model.rotation((float) (GLFWWindow.getTime() * Math.toRadians(90)), 0, 0, 1);
-        view.setLookAt(2, 2, 2, 0, 0, 0, 0, 0, 1);
-        float aspectRatio = (float) QuasarRenderer.pulsar.getSwapWidth() / QuasarRenderer.pulsar.getSwapHeight();
-        proj.setPerspective((float) Math.toRadians(45), aspectRatio, 0.1f, 10.0f);
-        proj.m11(-proj.m11());
-        uniform.set(0, model);
-        uniform.set(1, view);
-        uniform.set(2, proj);
-        QuasarRenderer.pulsar.buffers.uploadUniform(frame.uniformBuffer, uniform);
+        this.model.rotation((float) (GLFWWindow.getTime() * Math.toRadians(90)), 0, 0, 1);
+        this.view.setLookAt(2, 2, 2, 0, 0, 0, 0, 0, 1);
+        float aspectRatio = (float) this.pulsar.getSwapWidth() / this.pulsar.getSwapHeight();
+        this.proj.setPerspective((float) Math.toRadians(45), aspectRatio, 0.1f, 10.0f);
+        this.proj.m11(-this.proj.m11());
+        this.uniform.set(0, this.model);
+        this.uniform.set(1, this.view);
+        this.uniform.set(2, this.proj);
+        this.pulsar.buffers.uploadUniform(frame.uniformBuffer, this.uniform);
 
-        buffer.startRenderPass(renderPass, framebuffer);
-        buffer.bindPipeline(graphicsPipeline);
-        buffer.bindDescriptorSet(graphicsPipeline, frame.descriptorSet);
-        buffer.bindMesh(mesh);
-        buffer.drawMesh(mesh, 1, 0, 0);
+        buffer.startRenderPass(this.renderPass, framebuffer);
+        buffer.bindPipeline(this.graphicsPipeline);
+        buffer.bindDescriptorSet(this.graphicsPipeline, frame.descriptorSet);
+        buffer.bindMesh(this.mesh);
+        buffer.drawMesh(this.mesh, 1, 0, 0);
         buffer.endRenderPass();
     }
 }

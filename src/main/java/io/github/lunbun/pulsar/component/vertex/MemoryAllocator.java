@@ -15,6 +15,18 @@ import java.util.Map;
 
 // TODO: more optimized allocator
 public final class MemoryAllocator {
+    // memory allocation terminology used in this allocator (not official terminology):
+    // cell: multiple bytes. Allocations are turned into the number of cells they are allocating, then the allocator
+    //          finds the first occurrence of that number of empty cells
+    // header: a boolean value. The header determines if the cell at the corresponding index is claimed or not.
+    // heap: Vulkan memory. The heap is a handle to the Vulkan memory allocation that is split up by the allocator.
+    //          Heap size may also mean the number of cells per slot.
+    // memory type: the type of physical memory. Example: Device local memory (usually video memory), host visible
+    //          memory (usually system memory)
+    // slot: heap + cells + headers. Stores all of the memory data into a class so that the memory used by this program
+    //          can grow dynamically. Note: there is a hard-coded cap of 4096 slots. See the end of
+    //          https://vulkan-tutorial.com/Vertex_buffers/Staging_buffer for the reason why.
+
     // 4 megabytes/slot
     private static final int CELL_SIZE = 512; // # of bytes/cell
     private static final int HEAP_SIZE = 8192; // # of cells
@@ -130,8 +142,17 @@ public final class MemoryAllocator {
 
         // TODO: batch claim/free
         private void claim(MemorySlot slot, int index, int size) {
-            for (int i = 0; i < size; ++i) {
-                this.claim(slot, i + index);
+            for (int i = 0; i < size;) {
+                int pointer = i + index;
+                if (((pointer & 7) == 0) && (size - i >= 8)) {
+                    // if we are on the first of 8 headers and there are more than 8 headers left, we can just claim the
+                    // entire byte
+                    slot.headers[pointer >> 3] = (byte) 255;
+                    i += 8;
+                } else {
+                    this.claim(slot, pointer);
+                    ++i;
+                }
             }
         }
 
@@ -140,8 +161,17 @@ public final class MemoryAllocator {
                 if (slot.heap == heap) {
                     int cellMemorySize = MathUtils.ceilIntDivide(size, this.cellSize);
                     int cellPointer = pointer / this.cellSize;
-                    for (int i = 0; i < cellMemorySize; ++i) {
-                        this.unclaim(slot, i + cellPointer);
+                    for (int i = 0; i < cellMemorySize;) {
+                        int indexPointer = i + cellPointer;
+                        if (((indexPointer & 7) == 0) && (size - i >= 8)) {
+                            // if we are on the first of 8 headers and there are more than 8 headers left, we can just
+                            // unclaim the entire byte
+                            slot.headers[indexPointer >> 3] = 0;
+                            i += 8;
+                        } else {
+                            this.unclaim(slot, indexPointer);
+                            ++i;
+                        }
                     }
                     return;
                 }
@@ -151,6 +181,7 @@ public final class MemoryAllocator {
 
         public AllocResult mallocAligned(int size, int alignment) {
             int cellMemorySize = MathUtils.ceilIntDivide(size, this.cellSize);
+            // make sure no more than an entire slot's size is allocated
             if (cellMemorySize >= this.heapCellSize) {
                 throw new RuntimeException("Attempted to allocate " + size + ", more than slot limit of " + (this.heapCellSize * this.cellSize));
             }
@@ -194,11 +225,15 @@ public final class MemoryAllocator {
                 }
             }
 
+            if (this.slots.size() >= 4096) {
+                throw new RuntimeException("Reached cap of 4096 memory slots!");
+            }
+
             // if we have to create a new slot, it is guaranteed that the first header is empty
             MemorySlot slot = this.createSlot();
             this.claim(slot, 0, cellMemorySize);
             PulsarApplication.LOGGER.info("Had to create a new memory slot! Memory type now has " +
-                    (this.getMemorySize() / 1048576) + " MB");
+                    (this.getMemorySize() / 1048576) + " MB, " + this.slots.size() + " slots");
             return new AllocResult(slot.heap, 0);
         }
     }

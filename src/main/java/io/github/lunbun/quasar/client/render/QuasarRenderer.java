@@ -9,9 +9,13 @@ import io.github.lunbun.quasar.Quasar;
 import io.github.lunbun.quasar.client.engine.framework.glfw.GLFWWindow;
 import io.github.lunbun.quasar.client.render.immediate.Immediates;
 import io.github.lunbun.quasar.client.render.test.TestRenderer;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+
+import java.util.List;
 
 public class QuasarRenderer {
-    public static final PulsarApplication pulsar = new PulsarApplication("Minecraft");
+    private static final PulsarApplication pulsar = new PulsarApplication("Minecraft");
+    private static final List<VulkanRenderer> vulkanRenderers = new ObjectArrayList<>();
     private static long window;
 
     public static void initWindow() {
@@ -24,12 +28,19 @@ public class QuasarRenderer {
         pulsar.setWindow(handle);
     }
 
+    private static void createVulkanRenderers() {
+        vulkanRenderers.add(new TestRenderer());
+//        vulkanRenderers.add(new Immediates());
+    }
+
     public static void resizeFramebuffer(int width, int height) {
         pulsar.framebufferResized();
     }
 
     public static void initVulkan() {
         Quasar.LOGGER.info("Initializing Vulkan");
+        createVulkanRenderers();
+
         GraphicsCardPreference preference = new GraphicsCardPreference(
                 DeviceType.INTEGRATED,
                 new QueueFamily[] { QueueFamily.GRAPHICS, QueueFamily.PRESENT },
@@ -38,25 +49,31 @@ public class QuasarRenderer {
         pulsar.requestGraphicsCard(preference);
 
         pulsar.addRecreateHandler(ignored -> {
-            TestRenderer.recreateFramebuffers();
-            Immediates.recreateFramebuffers();
+            for (VulkanRenderer vulkanRenderer : vulkanRenderers) {
+                vulkanRenderer.recreateFramebuffers();
+            }
         });
 
         pulsar.addCommandBufferDestructor(ignored -> {
-            TestRenderer.destroyFramebuffers();
-            Immediates.destroyFramebuffers();
+            for (VulkanRenderer vulkanRenderer : vulkanRenderers) {
+                vulkanRenderer.destroyFramebuffers();
+            }
         });
 
         pulsar.addCommandBufferRecorder((commandBuffer, index, currentFrame) -> {
-            TestRenderer.recordCommandBuffers(commandBuffer, index, currentFrame);
-            Immediates.recordCommandBuffers(commandBuffer, index, currentFrame);
+            for (VulkanRenderer vulkanRenderer : vulkanRenderers) {
+                vulkanRenderer.recordCommandBuffers(commandBuffer, index, currentFrame);
+            }
         });
 
         pulsar.initialize();
 
-        TestRenderer.init();
-        TestRenderer.recreateFramebuffers();
-        Immediates.recreateFramebuffers();
+        for (VulkanRenderer vulkanRenderer : vulkanRenderers) {
+            vulkanRenderer.init(pulsar);
+        }
+        for (VulkanRenderer vulkanRenderer : vulkanRenderers) {
+            vulkanRenderer.recreateFramebuffers();
+        }
 
         System.out.print("0 fps");
         int fps = 0;
@@ -85,8 +102,9 @@ public class QuasarRenderer {
     }
 
     public static void cleanup() {
-        TestRenderer.destroy();
-        Immediates.destroy();
+        for (VulkanRenderer vulkanRenderer : vulkanRenderers) {
+            vulkanRenderer.destroy();
+        }
         pulsar.exit();
     }
 }

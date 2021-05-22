@@ -14,7 +14,6 @@ import io.github.lunbun.pulsar.component.vertex.Vertex;
 import io.github.lunbun.pulsar.struct.pipeline.Blend;
 import io.github.lunbun.pulsar.struct.vertex.Mesh;
 import io.github.lunbun.pulsar.util.vulkan.DataType;
-import io.github.lunbun.quasar.client.render.QuasarRenderer;
 import io.github.lunbun.quasar.client.util.QuasarSettings;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.joml.Matrix4f;
@@ -30,28 +29,35 @@ public enum Immediate {
         vertexBuilder.attribute(DataType.UINT, 1);
     }, new Shader("shaders/positionColor.vert", "shaders/positionColor.frag"), false);
 
-//    public static Immediate[] VALUES = Immediate.values();
-    public static Immediate[] VALUES = new Immediate[] { };
+    public static Immediate[] VALUES = Immediate.values();
 
+    private final Consumer<Vertex.Builder> attributeWriter;
     private final boolean useIndexBuffer;
     private final Shader shader;
-    private final Blend blendFunc;
-    private final DescriptorSetLayout descriptorSetLayout;
-    private final Vertex.Builder vertexBuilder;
-    private final Uniform uniform;
+    private PulsarApplication pulsar;
+    private Blend blendFunc;
+    private DescriptorSetLayout descriptorSetLayout;
+    private Vertex.Builder vertexBuilder;
+    private Uniform uniform;
     private RenderPass renderPass;
     private GraphicsPipeline graphicsPipeline;
     private final List<Framebuffer> framebuffers = new ObjectArrayList<>();
-    private final List<ImmediateFrame> frames;
-    private final Matrix4f matrix;
-    private final List<Mesh> submittedMeshes;
-    private final Texture texture;
+    private List<ImmediateFrame> frames;
+    private Matrix4f matrix;
+    private List<Mesh> submittedMeshes;
+    private Texture texture;
 
     private ByteBuffer vertices;
     private ByteBuffer indices;
 
     Immediate(Consumer<Vertex.Builder> attributeWriter, Shader shader, boolean useIndexBuffer) {
+        this.attributeWriter = attributeWriter;
+        this.shader = shader;
         this.useIndexBuffer = useIndexBuffer;
+    }
+
+    public void init(PulsarApplication pulsar) {
+        this.pulsar = pulsar;
 
         // we don't actually use vertex builder to create vertices, we just use it to get the size of the vertex
         this.vertexBuilder = new Vertex.Builder();
@@ -65,9 +71,8 @@ public enum Immediate {
         this.matrix.identity();
         this.matrix.m11(-this.matrix.m11());
 
-        this.descriptorSetLayout = QuasarRenderer.pulsar.descriptorSetLayouts.createDescriptorSetLayout();
+        this.descriptorSetLayout = pulsar.descriptorSetLayouts.createDescriptorSetLayout();
 
-        this.shader = shader;
         this.blendFunc = new Blend(
                 Blend.Factor.SRC_ALPHA, Blend.Operator.ADD, Blend.Factor.ONE_MINUS_SRC_ALPHA,
                 Blend.Factor.ONE, Blend.Operator.ADD, Blend.Factor.ZERO
@@ -77,16 +82,16 @@ public enum Immediate {
         for (int i = 0; i < PulsarApplication.MAX_FRAMES_IN_FLIGHT; ++i) {
             ImmediateFrame frame = new ImmediateFrame();
             this.frames.add(frame);
-            frame.descriptorSet = QuasarRenderer.pulsar.descriptorPool.allocateSet(descriptorSetLayout);
-            frame.uniformBuffer = QuasarRenderer.pulsar.buffers.createUniformBuffer(uniformBuilder.sizeof(), true);
-            QuasarRenderer.pulsar.buffers.uploadUniform(frame.uniformBuffer, this.uniform);
+            frame.descriptorSet = pulsar.descriptorPool.allocateSet(descriptorSetLayout);
+            frame.uniformBuffer = pulsar.buffers.createUniformBuffer(uniformBuilder.sizeof(), true);
+            pulsar.buffers.uploadUniform(frame.uniformBuffer, this.uniform);
             frame.descriptorSet.configure(frame.uniformBuffer);
         }
 
         this.submittedMeshes = new ObjectArrayList<>();
         this.vertices = ByteBuffer.allocate(0);
         this.indices = ByteBuffer.allocate(0);
-        this.texture = QuasarRenderer.pulsar.textureLoader.loadFile(
+        this.texture = pulsar.textureLoader.loadFile(
                 Objects.requireNonNull(ClassLoader.getSystemClassLoader().getResource("textures/texture.jpg"))
                         .toExternalForm());
     }
@@ -105,14 +110,14 @@ public enum Immediate {
 
     public void submitMesh() {
         int vertexCount = this.vertices.capacity() / this.vertexBuilder.sizeof();
-        Buffer vbo = QuasarRenderer.pulsar.buffers.createVertexBuffer(vertexCount, this.vertices.capacity(),
+        Buffer vbo = this.pulsar.buffers.createVertexBuffer(vertexCount, this.vertices.capacity(),
                 QuasarSettings.USE_IMMEDIATE_STAGING);
-        QuasarRenderer.pulsar.buffers.uploadBuffer(vbo, this.vertices);
+        this.pulsar.buffers.uploadBuffer(vbo, this.vertices);
         Buffer ibo = null;
         if (this.useIndexBuffer) {
             int indexCount = this.indices.capacity() / Short.BYTES;
-            ibo = QuasarRenderer.pulsar.buffers.createIndexBuffer(indexCount, QuasarSettings.USE_IMMEDIATE_STAGING);
-            QuasarRenderer.pulsar.buffers.uploadBuffer(ibo, this.indices);
+            ibo = this.pulsar.buffers.createIndexBuffer(indexCount, QuasarSettings.USE_IMMEDIATE_STAGING);
+            this.pulsar.buffers.uploadBuffer(ibo, this.indices);
         }
 
         this.submittedMeshes.add(new Mesh(vbo, ibo));
@@ -134,14 +139,14 @@ public enum Immediate {
     }
 
     public void destroyFramebuffers() {
-        QuasarRenderer.pulsar.framebuffers.destroy(this.framebuffers);
+        this.pulsar.framebuffers.destroy(this.framebuffers);
     }
 
     public void recreateFramebuffers() {
-        this.renderPass = QuasarRenderer.pulsar.renderPasses.createRenderPass();
-        this.graphicsPipeline = QuasarRenderer.pulsar.pipelines.createPipeline(this.shader, this.blendFunc,
+        this.renderPass = this.pulsar.renderPasses.createRenderPass();
+        this.graphicsPipeline = this.pulsar.pipelines.createPipeline(this.shader, this.blendFunc,
                 this.renderPass, this.descriptorSetLayout, this.vertexBuilder);
-        QuasarRenderer.pulsar.framebuffers.createFramebuffers(this.renderPass, this.framebuffers);
+        this.pulsar.framebuffers.createFramebuffers(this.renderPass, this.framebuffers);
     }
 
     public void recordCommandBuffers(CommandBuffer buffer, int framebufferIndex, int currentFrame) {

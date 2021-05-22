@@ -23,6 +23,10 @@ public final class CommandBuffer {
         this.buffer = buffer;
     }
 
+    public void reset() {
+        VK10.vkResetCommandBuffer(this.buffer, 0);
+    }
+
     private void assertRecording() {
         if (!this.isRecording) {
             throw new RuntimeException("Not recording command buffer!");

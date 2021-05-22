@@ -6,6 +6,7 @@ import io.github.lunbun.pulsar.component.setup.LogicalDevice;
 import io.github.lunbun.pulsar.component.setup.QueueManager;
 import io.github.lunbun.pulsar.struct.drawing.Frame;
 import io.github.lunbun.pulsar.struct.setup.QueueFamily;
+import io.github.lunbun.pulsar.util.PulsarSettings;
 import io.github.lunbun.pulsar.util.misc.CommandBufferRecorder;
 import io.github.lunbun.pulsar.util.misc.MathUtils;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
@@ -86,11 +87,18 @@ public final class FrameSynchronizer {
             int imageIndex = pImageIndex.get(0);
 
             if (this.bufferRecorder != null) {
-                // TODO: reset the buffer instead of free & allocate
-                if (frame.commandBuffer != null) {
-                    this.commandPool.freeBuffer(frame.commandBuffer);
+                if (PulsarSettings.RESET_COMMAND_BUFFERS) {
+                    if (frame.commandBuffer == null) {
+                        frame.commandBuffer = this.commandPool.allocateBuffer();
+                    } else {
+                        frame.commandBuffer.reset();
+                    }
+                } else {
+                    if (frame.commandBuffer != null) {
+                        this.commandPool.freeBuffer(frame.commandBuffer);
+                    }
+                    frame.commandBuffer = this.commandPool.allocateBuffer();
                 }
-                frame.commandBuffer = this.commandPool.allocateBuffer();
                 this.bufferRecorder.record(frame.commandBuffer, imageIndex, this.currentFrame);
             }
 

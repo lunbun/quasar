@@ -5,6 +5,7 @@ import io.github.lunbun.pulsar.component.setup.LogicalDevice;
 import io.github.lunbun.pulsar.component.setup.PhysicalDevice;
 import io.github.lunbun.pulsar.struct.setup.GraphicsCardPreference;
 import io.github.lunbun.pulsar.struct.setup.QueueFamily;
+import io.github.lunbun.pulsar.util.PulsarSettings;
 import io.github.lunbun.pulsar.util.vulkan.DeviceUtils;
 import io.github.lunbun.pulsar.util.misc.MathUtils;
 import io.github.lunbun.pulsar.util.vulkan.QueueFamilyIndices;
@@ -125,8 +126,11 @@ public final class SwapChain {
         }
 
         private static int chooseSwapPresentMode(IntBuffer availablePresentModes) {
-            for(int i = 0;i < availablePresentModes.capacity();i++) {
-                if (availablePresentModes.get(i) == KHRSurface.VK_PRESENT_MODE_MAILBOX_KHR) {
+            int preferredMode = PulsarSettings.PREFER_UNLIMITED_FPS ? KHRSurface.VK_PRESENT_MODE_IMMEDIATE_KHR :
+                    KHRSurface.VK_PRESENT_MODE_IMMEDIATE_KHR;
+
+            for(int i = 0; i < availablePresentModes.capacity(); i++) {
+                if (availablePresentModes.get(i) == preferredMode) {
                     return availablePresentModes.get(i);
                 }
             }

@@ -71,11 +71,8 @@ public final class BufferUtils {
         return new BufferData(buffer, memoryType, memory, pointer, size, (int) memoryRequirements.size());
     }
 
-    public static void copyBuffer(CommandPool commandPool, QueueManager queues, long src, long dst, int size) {
-        CommandBuffer buffer = commandPool.allocateBuffer();
-        buffer.startRecordingOneTimeSubmit();
+    public static void copyBuffer(long src, long dst, int size, CommandBuffer buffer) {
         buffer.copyBuffer(src, dst, size);
-        buffer.endRecordingOneTimeSubmit(queues.getQueue(QueueFamily.GRAPHICS), commandPool);
     }
 
     public static void destroy(LogicalDevice device, MemoryAllocator allocator, BufferData data) {
@@ -83,9 +80,9 @@ public final class BufferUtils {
         allocator.free(data.memory, data.memoryType, data.pointer, data.allocSize);
     }
 
-    public static void uploadData(LogicalDevice device, PhysicalDevice physicalDevice, MemoryAllocator allocator,
-                                  CommandPool commandPool, QueueManager queues, BufferData buffer,
-                                  Consumer<ByteBuffer> bufferWriter, boolean useStaging) {
+    private static void uploadData(LogicalDevice device, PhysicalDevice physicalDevice, MemoryAllocator allocator,
+                                  BufferData buffer, Consumer<ByteBuffer> bufferWriter, boolean useStaging,
+                                  CommandBuffer commandBuffer, boolean submit, CommandPool commandPool, VkQueue queue) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             PointerBuffer pData = stack.mallocPointer(1);
             if (useStaging) {
@@ -97,7 +94,14 @@ public final class BufferUtils {
                     bufferWriter.accept(pData.getByteBuffer(0, (int) staging.size));
                 }
                 VK10.vkUnmapMemory(device.device, staging.memory);
-                BufferUtils.copyBuffer(commandPool, queues, staging.buffer, buffer.buffer, (int) buffer.size);
+                BufferUtils.copyBuffer(staging.buffer, buffer.buffer, (int) buffer.size, commandBuffer);
+
+                // we need parameter for submit since we can't submit the command buffer after the staging buffer has
+                // been destroyed
+                if (submit) {
+                    commandBuffer.endRecordingOneTimeSubmit(queue, commandPool);
+                }
+
                 destroy(device, allocator, staging);
             } else {
                 // staging buffers can actually be slower if we have to upload data every frame
@@ -109,6 +113,25 @@ public final class BufferUtils {
                 }
                 VK10.vkUnmapMemory(device.device, buffer.memory);
             }
+        }
+    }
+
+    public static void uploadData(LogicalDevice device, PhysicalDevice physicalDevice, MemoryAllocator allocator,
+                                  BufferData buffer, Consumer<ByteBuffer> bufferWriter, boolean useStaging,
+                                  CommandBuffer commandBuffer) {
+        uploadData(device, physicalDevice, allocator, buffer, bufferWriter, useStaging, commandBuffer, false, null, null);
+    }
+
+    public static void uploadData(LogicalDevice device, PhysicalDevice physicalDevice, MemoryAllocator allocator,
+                                  CommandPool commandPool, QueueManager queues, BufferData buffer,
+                                  Consumer<ByteBuffer> bufferWriter, boolean useStaging) {
+        if (useStaging) {
+            CommandBuffer commandBuffer = commandPool.allocateBuffer();
+            commandBuffer.startRecordingOneTimeSubmit();
+            uploadData(device, physicalDevice, allocator, buffer, bufferWriter, true, commandBuffer, true,
+                    commandPool, queues.getQueue(QueueFamily.GRAPHICS));
+        } else {
+            uploadData(device, physicalDevice, allocator, buffer, bufferWriter, false, null, false, null, null);
         }
     }
 }

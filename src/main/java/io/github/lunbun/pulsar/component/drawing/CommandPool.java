@@ -6,9 +6,9 @@ import io.github.lunbun.pulsar.component.setup.LogicalDevice;
 import io.github.lunbun.pulsar.component.setup.PhysicalDevice;
 import io.github.lunbun.pulsar.struct.setup.GraphicsCardPreference;
 import io.github.lunbun.pulsar.struct.setup.QueueFamily;
+import io.github.lunbun.pulsar.util.PulsarSettings;
 import io.github.lunbun.pulsar.util.vulkan.DeviceUtils;
 import io.github.lunbun.pulsar.util.vulkan.QueueFamilyIndices;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
@@ -22,7 +22,8 @@ public final class CommandPool {
 
     private final long commandPool;
 
-    public CommandPool(LogicalDevice device, SwapChain swapChain, PhysicalDevice physicalDevice, WindowSurface surface, GraphicsCardPreference preference) {
+    public CommandPool(LogicalDevice device, SwapChain swapChain, PhysicalDevice physicalDevice, WindowSurface surface,
+                       GraphicsCardPreference preference) {
         this.swapChain = swapChain;
         this.device = device;
 
@@ -32,6 +33,9 @@ public final class CommandPool {
             VkCommandPoolCreateInfo poolInfo = VkCommandPoolCreateInfo.callocStack(stack);
             poolInfo.sType(VK10.VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO);
             poolInfo.queueFamilyIndex(indices.getFamilyIndex(QueueFamily.GRAPHICS));
+            if (PulsarSettings.RESET_COMMAND_BUFFERS) {
+                poolInfo.flags(VK10.VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
+            }
 
             LongBuffer pCommandPool = stack.longs(VK10.VK_NULL_HANDLE);
 
